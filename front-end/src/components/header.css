@@ -63,3 +63,28 @@
         font-size: 2rem;
     }
 }
+
+/* Logout Button Styles */
+.logout-button {
+  position: absolute;
+  top: 10px;
+  right: 20px; /* Adjust based on your design */
+  padding: 8px 16px;
+  background-color: #f44336; /* Red */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.logout-button:hover {
+  background-color: #d32f2f; /* Darker red for hover */
+}
+
+.logout-button:active {
+  background-color: #b71c1c; /* Even darker red for active state */
+}
+

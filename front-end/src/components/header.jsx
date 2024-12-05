@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './header.css';
 
-function Header() {
+function Header({ onLogout }) {
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [currentBudget, setCurrentBudget] = useState('Personal Budget');
 
@@ -38,6 +38,11 @@ function Header() {
           ))}
         </ul>
       )}
+
+      {/* Logout Button */}
+      <button className="logout-button" onClick={onLogout}>
+        Logout
+      </button>
     </div>
   );
 }

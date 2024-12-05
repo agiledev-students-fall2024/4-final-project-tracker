@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Header from '../components/header';
 import BudgetProgress from '../mocks/BudgetProgress.jsx';
 import Notifications from '../components/notifications.jsx';
+import transactionData from '../mocks/transactionData';
+import budgetLimits from '../mocks/budgetLimits';
 import Categories from '../components/Categories.jsx';
 import AddTransaction from '../components/AddTransaction';
 import './home.css';

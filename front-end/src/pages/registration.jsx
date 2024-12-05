@@ -1,6 +1,6 @@
-// src/pages/registration.jsx
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 import './registration.css';
 
 const Registration = () => {
@@ -10,12 +10,34 @@ const Registration = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const navigate = useNavigate();
 
-  const handleRegistration = (e) => {
+  const handleRegistration = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
 
-    // Display message indicating no backend functionality
-    setErrorMessage("Sorry, can't do that. There's no backend yet.");
+    if (!firstName || !lastName || !username || !email || !password) {
+      setErrorMessage('All fields are required.');
+      return;
+    }
+
+    try {
+      await axios.post('http://localhost:3001/api/signup', {
+        firstName,
+        lastName,
+        username,
+        email,
+        password,
+      });
+      setSuccessMessage('Registration successful! Redirecting to login...');
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+    } catch (err) {
+      setErrorMessage(err.response?.data?.message || 'Registration failed.');
+    }
   };
 
   return (
@@ -55,10 +77,9 @@ const Registration = () => {
         <button type="submit">Register</button>
       </form>
 
-      {/* Error message displayed after attempting registration */}
       {errorMessage && <p className="error-message">{errorMessage}</p>}
+      {successMessage && <p className="success-message">{successMessage}</p>}
 
-      {/* Back to Login link */}
       <div className="login-link-container">
         <Link to="/login" className="login-link">
           Already have an account? Go back to login

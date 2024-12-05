@@ -1,25 +1,33 @@
-// src/pages/loginPage.jsx
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios'; // Centralized axios instance for API calls
 import './loginPage.css';
 
 const LoginPage = ({ onLogin }) => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState(''); // Updated to use email
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
-  // Function to handle login validation
-  const handleLogin = () => {
-    if (!username || !password) {
-      setError('Username and password are required.');
+  // Function to handle login
+  const handleLogin = async () => {
+    if (!email || !password) {
+      setError('Email and password are required.');
       return;
     }
 
-    // Hardcoded username and password for demo purposes
-    if (username === 'username' && password === 'password') {
-      onLogin();
-    } else {
-      setError('Invalid username or password.');
+    try {
+      const response = await axios.post('http://localhost:3001/api/login', { email, password }); // Call backend API
+      const { token } = response.data;
+
+      // Save token and trigger onLogin callback
+      localStorage.setItem('token', token);
+      onLogin(token);
+
+      // Redirect to the home page
+      navigate('/');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid email or password.');
     }
   };
 
@@ -27,10 +35,10 @@ const LoginPage = ({ onLogin }) => {
     <div className="login-container">
       <h2>Login</h2>
       <input
-        type="text"
-        placeholder="Username"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
       />
       <input
         type="password"
