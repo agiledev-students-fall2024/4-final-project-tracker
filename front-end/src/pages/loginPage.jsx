@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios'; // Centralized axios instance for API calls
 import './loginPage.css';
+const BASE_URL = process.env.REACT_APP_SERVER_HOSTNAME;
  
 const LoginPage = ({ onLogin }) => {
   const [email, setEmail] = useState(''); // Updated to use email
@@ -17,7 +18,7 @@ const LoginPage = ({ onLogin }) => {
     }
  
     try {
-      const response = await axios.post('http://localhost:3001/user/login', {
+      const response = await axios.post(`${BASE_URL}/user/login`, {
         email,
         password,
       }); // Call backend API

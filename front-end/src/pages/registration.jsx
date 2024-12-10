@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import './registration.css';
+const BASE_URL = process.env.REACT_APP_SERVER_HOSTNAME;
  
 const Registration = () => {
   const [firstName, setFirstName] = useState('');
@@ -24,7 +25,7 @@ const Registration = () => {
     }
  
     try {
-      await axios.post('http://localhost:3001/user/signup', {
+      await axios.post(`${BASE_URL}/user/signup`, {
         firstName,
         lastName,
         username,

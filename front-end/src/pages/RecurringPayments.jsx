@@ -13,6 +13,8 @@ function RecurringPayments() {
   const [errorMessage, setErrorMessage] = useState('');
   const token = localStorage.getItem('token');
   const userId = localStorage.getItem('id');
+  // Base URL from environment variable
+  const BASE_URL = process.env.REACT_APP_SERVER_HOSTNAME;
  
   const [newPayment, setNewPayment] = useState({
     userId: userId || '',
@@ -31,10 +33,9 @@ function RecurringPayments() {
  
     const fetchPayments = async () => {
       try {
-        const response = await axios.get(
-          `http://localhost:3001/api/recurringbills/`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const response = await axios.get(`${BASE_URL}/api/recurringbills/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setPayments(response.data || []);
       } catch (error) {
         console.error('Failed to fetch recurring bills:', error);
@@ -44,7 +45,7 @@ function RecurringPayments() {
  
     const fetchAccounts = async () => {
       try {
-        const response = await axios.get('http://localhost:3001/api/accounts', {
+        const response = await axios.get(`${BASE_URL}/api/accounts`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setAccounts(response.data || []);
@@ -92,7 +93,7 @@ function RecurringPayments() {
       if (isEditing && currentPaymentIndex !== null) {
         const updatedPayment = { ...newPayment };
         response = await axios.put(
-          `http://localhost:3001/api/recurringbills/${updatedPayment._id}`,
+          `${BASE_URL}/api/recurringbills/${updatedPayment._id}`,
           updatedPayment,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -101,7 +102,7 @@ function RecurringPayments() {
         setPayments(updatedPayments);
       } else {
         response = await axios.post(
-          `http://localhost:3001/api/recurringbills`,
+          `${BASE_URL}/api/recurringbills`,
           newPayment,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -136,7 +137,7 @@ function RecurringPayments() {
  
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:3001/api/recurringbills/${id}`, {
+      await axios.delete(`${BASE_URL}/api/recurringbills/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setPayments(payments.filter((payment) => payment._id !== id));

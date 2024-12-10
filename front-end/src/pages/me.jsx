@@ -15,6 +15,7 @@ const Me = () => {
     password: false,
   });
   const [updatedData, setUpdatedData] = useState({});
+  const BASE_URL = process.env.REACT_APP_SERVER_HOSTNAME;
  
   // Fetch user data on component mount
   useEffect(() => {
@@ -27,12 +28,9 @@ const Me = () => {
           'Stored userId in localStorage:',
           localStorage.getItem('id')
         );
-        const response = await axios.get(
-          `http://localhost:3001/user/${userId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }, // Send token in headers
-          }
-        );
+        const response = await axios.get(`${BASE_URL}/user/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` }, // Send token in headers
+        });
  
         setUser(response.data); // Set user data
         setUpdatedData(response.data); // Prepare editable data
@@ -66,7 +64,7 @@ const Me = () => {
       const updatePayload = { [field]: updatedData[field] };
  
       const response = await axios.put(
-        `http://localhost:3001/user/${userId}/update`,
+        `${BASE_URL}/user/${userId}/update`,
         updatePayload,
         {
           headers: { Authorization: `Bearer ${token}` },
