@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 
-function Notifications() {
+function Notifications({ categoryLimits = {}, transactions = [] }) {
   const [notifications, setNotifications] = useState({
     budgetLimits: [],
     subscriptions: [],
-    upcomingBills: []
+    upcomingBills: [],
   });
   const [expandedSections, setExpandedSections] = useState({
     budgetLimits: false,
     subscriptions: false,
-    upcomingBills: false
+    upcomingBills: false,
   });
 
   const userId = localStorage.getItem('id'); 
@@ -20,22 +20,56 @@ function Notifications() {
       return;
     }
 
-    fetch(`http://localhost:3001/api/notifications?userId=${userId}`)
-      .then((response) => response.json())
-      .then((data) => {
-        setNotifications({
-          budgetLimits: data.budgetLimits || [],
-          subscriptions: data.subscriptions || [],
-          upcomingBills: data.upcomingBills || []
+    const fetchNotifications = async () => {
+      try {
+        const notificationsResponse = await fetch(`http://localhost:3001/api/notifications?userId=${userId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
-      })
-      .catch((error) => console.error('Failed to fetch notifications:', error));
-  }, [userId]);
+    
+        if (!notificationsResponse.ok) {
+          console.error('Failed to fetch notifications:', notificationsResponse.status);
+          return;
+        }
+    
+        const notificationsData = await notificationsResponse.json();
+    
+        const spentPerCategory = (transactions || []).reduce((totals, transaction) => {
+          const { category, amount } = transaction;
+          if (!totals[category]) totals[category] = 0;
+          totals[category] += amount;
+          return totals;
+        }, {});
+    
+        const budgetLimitNotifications = Object.keys(categoryLimits || {}).reduce((alerts, category) => {
+          const limit = categoryLimits[category];
+          const spent = spentPerCategory[category] || 0;
+          if (limit && spent / limit >= 0.9) {
+            alerts.push({
+              category,
+              spent,
+              limit,
+              percentage: Math.round((spent / limit) * 100),
+            });
+          }
+          return alerts;
+        }, []);
+    
+        setNotifications({
+          ...notificationsData,
+          budgetLimits: budgetLimitNotifications,
+        });
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+      }
+    };
+    
+    fetchNotifications();
+  }, [userId, categoryLimits, transactions]);
 
   const toggleSection = (section) => {
     setExpandedSections((prevSections) => ({
       ...prevSections,
-      [section]: !prevSections[section]
+      [section]: !prevSections[section],
     }));
   };
 
@@ -50,7 +84,7 @@ function Notifications() {
             <ul className="expanded-section">
               {notifications.budgetLimits.map((limit, index) => (
                 <li key={index} className="expanded-section-item">
-                  • {limit.description || limit.name}: ${limit.spent} / ${limit.limit} spent
+                  {limit.category}: ${limit.spent} / ${limit.limit} spent ({limit.percentage}% of limit)
                 </li>
               ))}
             </ul>
@@ -62,10 +96,9 @@ function Notifications() {
           Subscriptions: {notifications.subscriptions.length} updates
           {expandedSections.subscriptions && (
             <ul className="expanded-section">
-              {notifications.subscriptions.map((subscription) => (
-                <li key={subscription.id} className="expanded-section-item">
-                  {subscription.name} - Due in {subscription.daysUntilDue}{' '}
-                  {subscription.daysUntilDue === 1 ? 'day' : 'days'}
+              {notifications.subscriptions.map((subscription, index) => (
+                <li key={index} className="expanded-section-item">
+                  {subscription.name} - Due in {subscription.daysUntilDue} day(s)
                 </li>
               ))}
             </ul>
@@ -77,10 +110,9 @@ function Notifications() {
           Upcoming Bills: {notifications.upcomingBills.length} updates
           {expandedSections.upcomingBills && (
             <ul className="expanded-section">
-              {notifications.upcomingBills.map((bill) => (
-                <li key={bill.id} className="expanded-section-item">
-                  {bill.name} - Due in {bill.daysUntilDue}{' '}
-                  {bill.daysUntilDue === 1 ? 'day' : 'days'}
+              {notifications.upcomingBills.map((bill, index) => (
+                <li key={index} className="expanded-section-item">
+                  {bill.name} - Due in {bill.daysUntilDue} day(s)
                 </li>
               ))}
             </ul>
