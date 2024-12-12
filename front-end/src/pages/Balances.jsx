@@ -9,6 +9,7 @@ const Balances = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [currentItemIndex, setCurrentItemIndex] = useState(null);
   const [isDebtModal, setIsDebtModal] = useState(false);
+
   const [newItem, setNewItem] = useState({
     type: '',
     amount: '',
@@ -42,6 +43,15 @@ const Balances = () => {
   useEffect(() => {
     fetchData();
   }, []); 
+
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
 
   const handleAddOrEditItem = () => {
     const token = localStorage.getItem('token');
@@ -127,11 +137,17 @@ const Balances = () => {
 
   const handleEditItem = (index, isDebt) => {
     if (isDebt) {
-      setNewItem(debts[index]);
+      setNewItem({
+        ...debts[index],
+        amount: debts[index].amount.toFixed(2), 
+      });
       setCurrentItemIndex(index);
       setIsDebtModal(true);
     } else {
-      setNewItem(accounts[index]);
+      setNewItem({
+        ...accounts[index],
+        amount: accounts[index].amount.toFixed(2),
+      });
       setCurrentItemIndex(index);
       setIsDebtModal(false);
     }
@@ -156,20 +172,65 @@ const Balances = () => {
 
   const handleTogglePaid = async (debtId, dateIndex) => {
     const token = localStorage.getItem('token');
-    if (token) {
-        try {
-            const headers = {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            };
+    if (!token) {
+      console.error("No token found. Please log in.");
+      return;
+    }
+  
+    const dueDate = debts.find(debt => debt._id === debtId)?.dueDates[dateIndex];
+    if (!dueDate) {
+      alert('Due date not found.');
+      return;
+    }
+  
+    try {
+      const selectedAccountId = dueDate.isPaid 
+        ? promptAccountSelection(accounts, 'Select an account to deposit the previously paid amount:') 
+        : promptAccountSelection(accounts, 'Select an account to pay from:');
+  
+      if (!selectedAccountId) {
+        alert('Operation cancelled.');
+        return;
+      }
+  
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
+  
+      const response = await axios.put(
+        `${BASE_URL}/api/debts/${debtId}/dueDates/${dateIndex}`,
+        { accountId: selectedAccountId, isUndo: dueDate.isPaid },
+        { headers }
+      );
+  
+      console.log('Debt updated successfully:', response.data);
+      fetchData();
+    } catch (error) {
+      console.error('Error updating due date status:', error);
+    }
+  };
 
-            await axios.put(`${BASE_URL}/api/debts/${debtId}/dueDates/${dateIndex}`, {}, { headers });
-
-            // Update state after the backend is updated
-            fetchData();
-        } catch (error) {
-            console.error('Error updating due date status:', error);
-        }
+  const promptAccountSelection = (accounts, message) => {
+    if (!accounts || accounts.length === 0) {
+      alert('No accounts available.');
+      return null;
+    }
+  
+    const accountOptions = accounts
+      .map((account, index) => `${index + 1}: ${account.type} - ${formatCurrency(account.amount)}`)
+      .join('\n');
+  
+    const selectedOption = prompt(
+      `${message}\n${accountOptions}\nEnter the number corresponding to your choice:`
+    );
+  
+    const selectedIndex = parseInt(selectedOption, 10) - 1;
+    if (selectedIndex >= 0 && selectedIndex < accounts.length) {
+      return accounts[selectedIndex]._id;
+    } else {
+      alert('Invalid selection.');
+      return null;
     }
   };
 
@@ -186,7 +247,7 @@ const Balances = () => {
                   {account.type} - XXXX{account.number}
                 </div>
                 <div className="account-balance">
-                  $ {account.amount.toLocaleString()}
+                  {formatCurrency(account.amount)}
                 </div>
                 <button className="edit-button" onClick={() => handleEditItem(index, false)}>Edit</button>
                 <button className="delete-button" onClick={() => handleDeleteItem(index, false)}>Delete</button>
@@ -208,14 +269,14 @@ const Balances = () => {
             debts.map((debt, index) => (
               <div key={index} className="debt-item">
                 <div className="debt-header">
-                  <strong>{debt.type}</strong> - ${debt.amount.toLocaleString()}
+                  <strong>{debt.type}</strong> - {formatCurrency(debt.amount)}
                 </div>
                 <div className="debt-details">
                   <p>
                     <strong>Payment Schedule:</strong> {debt.paymentSchedule}
                   </p>
                   <p>
-                    <strong>Payment Amount:</strong> ${debt.paymentAmount ? debt.paymentAmount.toFixed(2) : 'N/A'}
+                    <strong>Payment Amount:</strong> {debt.paymentAmount ? formatCurrency(debt.paymentAmount) : 'N/A'}
                   </p>
                   <p>
                     <strong>Remaining Due Dates:</strong>

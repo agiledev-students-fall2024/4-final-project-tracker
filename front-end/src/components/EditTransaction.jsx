@@ -15,7 +15,9 @@ function EditTransaction({ transaction, onUpdateTransaction, onClose, onDeleteTr
     merchant: transaction.merchant || '',
     category: transaction.category || '',
     amount: transaction.amount.toString(),
-    date: new Date(transaction.date).toISOString().split('T')[0],
+    date: new Date(new Date(transaction.date).getTime() - new Date().getTimezoneOffset() * 60000)
+    .toISOString()
+    .split('T')[0],
     accountId: transaction.accountId || ''
   });
 
@@ -83,7 +85,8 @@ function EditTransaction({ transaction, onUpdateTransaction, onClose, onDeleteTr
     if (!accountId) return alert('Please select an account.');
   
     try {
-      const utcDate = new Date(date).toISOString();
+      const inputDate = new Date(date);
+      inputDate.setMinutes(inputDate.getMinutes() + inputDate.getTimezoneOffset());
   
       const response = await axios.put(
         `${BASE_URL}/api/transactions/${_id}`,
@@ -92,14 +95,13 @@ function EditTransaction({ transaction, onUpdateTransaction, onClose, onDeleteTr
           merchant,
           category,
           amount: parseFloat(amount),
-          date: utcDate,
+          date: inputDate.toISOString().split('T')[0],
           accountId,
         },
         { headers }
       );
   
       const { transaction, updatedAccounts } = response.data;
-
       const updatedTargetAccount = updatedAccounts.find(acc => acc._id === accountId);
       onUpdateTransaction({
         transaction,
@@ -112,7 +114,6 @@ function EditTransaction({ transaction, onUpdateTransaction, onClose, onDeleteTr
       alert('Failed to update transaction. Please try again.');
     }
   };
-  
 
   const handleDeleteTransaction = async () => {
     const userId = localStorage.getItem('id');
