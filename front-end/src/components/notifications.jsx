@@ -5,14 +5,16 @@ function Notifications({ categoryLimits = {}, transactions = [] }) {
     budgetLimits: [],
     subscriptions: [],
     upcomingBills: [],
+    debts: [],
   });
   const [expandedSections, setExpandedSections] = useState({
     budgetLimits: false,
     subscriptions: false,
     upcomingBills: false,
+    debts: false,
   });
 
-  const userId = localStorage.getItem('id'); 
+  const userId = localStorage.getItem('id');
 
   useEffect(() => {
     if (!userId) {
@@ -22,47 +24,82 @@ function Notifications({ categoryLimits = {}, transactions = [] }) {
 
     const fetchNotifications = async () => {
       try {
-        const notificationsResponse = await fetch(`http://localhost:3001/api/notifications?userId=${userId}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        });
-    
-        if (!notificationsResponse.ok) {
-          console.error('Failed to fetch notifications:', notificationsResponse.status);
+        const [notificationsResponse, debtsResponse] = await Promise.all([
+          fetch(`http://localhost:3001/api/notifications?userId=${userId}`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          }),
+          fetch(`http://localhost:3001/api/debts`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          }),
+        ]);
+
+        if (!notificationsResponse.ok || !debtsResponse.ok) {
+          console.error(
+            'Failed to fetch data:',
+            notificationsResponse.status,
+            debtsResponse.status
+          );
           return;
         }
-    
+
         const notificationsData = await notificationsResponse.json();
-    
+        const debtsData = await debtsResponse.json();
+
+        const calculateDaysUntilDue = (dueDate) => {
+          const today = new Date();
+          const diffTime = new Date(dueDate) - today;
+          return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        };
+
+        const filterDueWithinNext5Days = (dueDate) => {
+          const daysUntilDue = calculateDaysUntilDue(dueDate);
+          return daysUntilDue >= 0 && daysUntilDue <= 5;
+        };
+
+        const debtReminders = debtsData.flatMap((debt) =>
+          debt.dueDates
+            .filter((dueDate) => filterDueWithinNext5Days(dueDate.date) && !dueDate.isPaid)
+            .map((dueDate) => ({
+              name: debt.type,
+              amount: debt.paymentAmount,
+              daysUntilDue: calculateDaysUntilDue(dueDate.date),
+            }))
+        );
+
         const spentPerCategory = (transactions || []).reduce((totals, transaction) => {
           const { category, amount } = transaction;
           if (!totals[category]) totals[category] = 0;
           totals[category] += amount;
           return totals;
         }, {});
-    
-        const budgetLimitNotifications = Object.keys(categoryLimits || {}).reduce((alerts, category) => {
-          const limit = categoryLimits[category];
-          const spent = spentPerCategory[category] || 0;
-          if (limit && spent / limit >= 0.9) {
-            alerts.push({
-              category,
-              spent,
-              limit,
-              percentage: Math.round((spent / limit) * 100),
-            });
-          }
-          return alerts;
-        }, []);
-    
+
+        const budgetLimitNotifications = Object.keys(categoryLimits || {}).reduce(
+          (alerts, category) => {
+            const limit = categoryLimits[category];
+            const spent = spentPerCategory[category] || 0;
+            if (limit && spent / limit >= 0.9) {
+              alerts.push({
+                category,
+                spent,
+                limit,
+                percentage: Math.round((spent / limit) * 100),
+              });
+            }
+            return alerts;
+          },
+          []
+        );
+
         setNotifications({
           ...notificationsData,
           budgetLimits: budgetLimitNotifications,
+          debts: debtReminders,
         });
       } catch (error) {
-        console.error('Failed to fetch notifications:', error);
+        console.error('Failed to fetch notifications or debts:', error);
       }
     };
-    
+
     fetchNotifications();
   }, [userId, categoryLimits, transactions]);
 
@@ -113,6 +150,20 @@ function Notifications({ categoryLimits = {}, transactions = [] }) {
               {notifications.upcomingBills.map((bill, index) => (
                 <li key={index} className="expanded-section-item">
                   {bill.name} - Due in {bill.daysUntilDue} day(s)
+                </li>
+              ))}
+            </ul>
+          )}
+        </li>
+
+        {/* Debt Notifications */}
+        <li onClick={() => toggleSection('debts')}>
+          Debts: {notifications.debts.length} updates
+          {expandedSections.debts && (
+            <ul className="expanded-section">
+              {notifications.debts.map((debt, index) => (
+                <li key={index} className="expanded-section-item">
+                  {debt.name}: ${debt.amount.toFixed(2)} - Due in {debt.daysUntilDue} day(s)
                 </li>
               ))}
             </ul>
