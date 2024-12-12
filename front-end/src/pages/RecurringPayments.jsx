@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './RecurringPayments.css';
 import axios from 'axios';
- 
+import CategoryDropdown from '../components/categoryDropdown';
+
 function RecurringPayments() {
   const [payments, setPayments] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -13,9 +14,9 @@ function RecurringPayments() {
   const [errorMessage, setErrorMessage] = useState('');
   const token = localStorage.getItem('token');
   const userId = localStorage.getItem('id');
-  // Base URL from environment variable
+
   const BASE_URL = process.env.REACT_APP_SERVER_HOSTNAME;
- 
+
   const [newPayment, setNewPayment] = useState({
     userId: userId || '',
     accountId: '',
@@ -24,13 +25,13 @@ function RecurringPayments() {
     amount: '',
     dueDate: '',
   });
- 
+
   useEffect(() => {
     if (!token) {
       setError('User not authenticated.');
       return;
     }
- 
+
     const fetchPayments = async () => {
       try {
         const response = await axios.get(`${BASE_URL}/api/recurringbills/`, {
@@ -42,7 +43,7 @@ function RecurringPayments() {
         setError('Unable to fetch recurring payments.');
       }
     };
- 
+
     const fetchAccounts = async () => {
       try {
         const response = await axios.get(`${BASE_URL}/api/accounts`, {
@@ -54,15 +55,15 @@ function RecurringPayments() {
         setError('Unable to fetch bank accounts.');
       }
     };
- 
+
     fetchPayments();
     fetchAccounts();
   }, [token]);
- 
-  const handleChange = (e) => {
-    setNewPayment({ ...newPayment, [e.target.name]: e.target.value });
+
+  const handleChange = (name, value) => {
+    setNewPayment({ ...newPayment, [name]: value });
   };
- 
+
   const resetForm = () => {
     setNewPayment({
       userId: userId || '',
@@ -77,18 +78,18 @@ function RecurringPayments() {
     setCurrentPaymentIndex(null);
     setErrorMessage('');
   };
- 
+
   const handleAddOrEditPayment = async () => {
     setMessage('');
     setErrorMessage('');
- 
+
     try {
       if (!token) throw new Error('User not authenticated.');
       if (!newPayment.name || !newPayment.category || !newPayment.amount) {
         setErrorMessage('All fields are required.');
         return;
       }
- 
+
       let response;
       if (isEditing && currentPaymentIndex !== null) {
         const updatedPayment = { ...newPayment };
@@ -108,7 +109,7 @@ function RecurringPayments() {
         );
         setPayments([...payments, response.data]);
       }
- 
+
       setMessage(response.data.message || 'Operation successful.');
       resetForm();
     } catch (error) {
@@ -127,14 +128,14 @@ function RecurringPayments() {
       }
     }
   };
- 
+
   const handleEdit = (index) => {
     setCurrentPaymentIndex(index);
     setNewPayment(payments[index]);
     setIsEditing(true);
     setShowModal(true);
   };
- 
+
   const handleDelete = async (id) => {
     try {
       await axios.delete(`${BASE_URL}/api/recurringbills/${id}`, {
@@ -146,7 +147,7 @@ function RecurringPayments() {
       setError('Unable to delete the payment.');
     }
   };
- 
+
   return (
     <div className="recurring-payments-container">
       <header className="recurring-header">
@@ -155,7 +156,7 @@ function RecurringPayments() {
           + Add New Payment
         </button>
       </header>
- 
+
       <ul className="payments-list">
         {payments.length === 0 && (
           <p className="no-payments-message">No recurring payments found.</p>
@@ -187,7 +188,7 @@ function RecurringPayments() {
           </li>
         ))}
       </ul>
- 
+
       {showModal && (
         <div className="modal">
           <div className="modal-content">
@@ -198,18 +199,16 @@ function RecurringPayments() {
                 type="text"
                 name="name"
                 value={newPayment.name}
-                onChange={handleChange}
+                onChange={(e) => handleChange(e.target.name, e.target.value)}
                 placeholder="e.g., Rent"
               />
             </label>
             <label>
               Category:
-              <input
-                type="text"
-                name="category"
-                value={newPayment.category}
-                onChange={handleChange}
-                placeholder="e.g., Bills"
+              <CategoryDropdown
+                selectedCategory={newPayment.category}
+                onChange={(value) => handleChange('category', value)}
+                allowCustom={true}
               />
             </label>
             <label>
@@ -218,7 +217,7 @@ function RecurringPayments() {
                 type="number"
                 name="amount"
                 value={newPayment.amount}
-                onChange={handleChange}
+                onChange={(e) => handleChange(e.target.name, e.target.value)}
                 placeholder="e.g., 1500"
               />
             </label>
@@ -228,8 +227,8 @@ function RecurringPayments() {
                 type="text"
                 name="dueDate"
                 value={newPayment.dueDate}
-                onChange={handleChange}
-                placeholder="e.g., Monthly on 15th"
+                onChange={(e) => handleChange(e.target.name, e.target.value)}
+                placeholder="e.g., 15"
               />
             </label>
             <label>
@@ -237,7 +236,7 @@ function RecurringPayments() {
               <select
                 name="accountId"
                 value={newPayment.accountId}
-                onChange={handleChange}
+                onChange={(e) => handleChange(e.target.name, e.target.value)}
               >
                 <option value="">Select an account</option>
                 {accounts.map((account) => (
@@ -268,10 +267,10 @@ function RecurringPayments() {
           </div>
         </div>
       )}
- 
+
       {message && <p className="info-message">{message}</p>}
     </div>
   );
 }
- 
+
 export default RecurringPayments;

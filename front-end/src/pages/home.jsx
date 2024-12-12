@@ -136,7 +136,10 @@ function Home() {
             </section>
 
             {/* Notifications */}
-            <Notifications />
+            <Notifications 
+                categoryLimits={categoryLimits} 
+                transactions={transactions} 
+            />
 
             {/* Transactions Section */}
             <section className="transactions">

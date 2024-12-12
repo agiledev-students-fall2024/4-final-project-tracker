@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-function Notifications() {
+function Notifications({ categoryLimits = {}, transactions = [] }) {
   const [notifications, setNotifications] = useState({
     budgetLimits: [],
     subscriptions: [],
@@ -20,17 +20,106 @@ function Notifications() {
       return;
     }
 
-    fetch(`http://localhost:3001/api/notifications?userId=${userId}`)
-      .then((response) => response.json())
-      .then((data) => {
-        setNotifications({
-          budgetLimits: data.budgetLimits || [],
-          subscriptions: data.subscriptions || [],
-          upcomingBills: data.upcomingBills || []
+    const fetchNotifications = async () => {
+      try {
+        const response = await fetch(`http://localhost:3001/api/notifications?userId=${userId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
-      })
-      .catch((error) => console.error('Failed to fetch notifications:', error));
-  }, [userId]);
+        const recurringPaymentsResponse = await fetch(`http://localhost:3001/api/recurringbills?userId=${userId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+
+        if (!response.ok || !recurringPaymentsResponse.ok) {
+          console.error('Failed to fetch data:', response.status, recurringPaymentsResponse.status);
+          return;
+        }
+
+        const notificationsData = await response.json();
+        const recurringPayments = await recurringPaymentsResponse.json();
+
+        if (!Array.isArray(recurringPayments)) {
+          console.error('Invalid recurring payments response:', recurringPayments);
+          return;
+        }
+
+        const calculateDaysUntilDue = (dueDate) => {
+          const today = new Date();
+          const currentDay = today.getDate();
+          const currentMonth = today.getMonth();
+          const currentYear = today.getFullYear();
+
+          let nextDueDate = new Date(currentYear, currentMonth, dueDate);
+          if (currentDay > dueDate) {
+            nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+          }
+
+          const diffTime = nextDueDate - today;
+          return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        };
+
+        const filterDueWithinNext5Days = (dueDate) => {
+          const daysUntilDue = calculateDaysUntilDue(dueDate);
+          return daysUntilDue >= 0 && daysUntilDue <= 5;
+        };
+
+        const upcomingBills = recurringPayments
+          .filter(
+            (payment) =>
+              ['bill', 'bills'].includes(payment.category.toLowerCase()) &&
+              filterDueWithinNext5Days(payment.dueDate)
+          )
+          .map((payment) => ({
+            name: payment.name,
+            amount: payment.amount,
+            daysUntilDue: calculateDaysUntilDue(payment.dueDate),
+          }));
+
+        const subscriptions = recurringPayments
+          .filter(
+            (payment) =>
+              ['subscription', 'subscriptions'].includes(payment.category.toLowerCase()) &&
+              filterDueWithinNext5Days(payment.dueDate)
+          )
+          .map((payment) => ({
+            name: payment.name,
+            amount: payment.amount,
+            daysUntilDue: calculateDaysUntilDue(payment.dueDate),
+          }));
+
+        const spentPerCategory = (transactions || []).reduce((totals, transaction) => {
+          const { category, amount } = transaction;
+          if (!totals[category]) totals[category] = 0;
+          totals[category] += amount;
+          return totals;
+        }, {});
+
+        const budgetLimitNotifications = Object.keys(categoryLimits || {}).reduce((alerts, category) => {
+          const limit = categoryLimits[category];
+          const spent = spentPerCategory[category] || 0;
+          if (limit && spent / limit >= 0.8) {
+            alerts.push({
+              category,
+              spent,
+              limit,
+              percentage: Math.round((spent / limit) * 100)
+            });
+          }
+          return alerts;
+        }, []);
+
+        setNotifications({
+          ...notificationsData,
+          upcomingBills,
+          subscriptions,
+          budgetLimits: budgetLimitNotifications
+        });
+      } catch (error) {
+        console.error('Failed to fetch notifications or recurring payments:', error);
+      }
+    };
+
+    fetchNotifications();
+  }, [userId, categoryLimits, transactions]);
 
   const toggleSection = (section) => {
     setExpandedSections((prevSections) => ({
@@ -50,7 +139,7 @@ function Notifications() {
             <ul className="expanded-section">
               {notifications.budgetLimits.map((limit, index) => (
                 <li key={index} className="expanded-section-item">
-                  • {limit.description || limit.name}: ${limit.spent} / ${limit.limit} spent
+                  {limit.category}: ${limit.spent} / ${limit.limit} spent ({limit.percentage}% of limit)
                 </li>
               ))}
             </ul>
@@ -62,10 +151,9 @@ function Notifications() {
           Subscriptions: {notifications.subscriptions.length} updates
           {expandedSections.subscriptions && (
             <ul className="expanded-section">
-              {notifications.subscriptions.map((subscription) => (
-                <li key={subscription.id} className="expanded-section-item">
-                  {subscription.name} - Due in {subscription.daysUntilDue}{' '}
-                  {subscription.daysUntilDue === 1 ? 'day' : 'days'}
+              {notifications.subscriptions.map((subscription, index) => (
+                <li key={index} className="expanded-section-item">
+                  {subscription.name} - Due in {subscription.daysUntilDue} day(s)
                 </li>
               ))}
             </ul>
@@ -77,10 +165,9 @@ function Notifications() {
           Upcoming Bills: {notifications.upcomingBills.length} updates
           {expandedSections.upcomingBills && (
             <ul className="expanded-section">
-              {notifications.upcomingBills.map((bill) => (
-                <li key={bill.id} className="expanded-section-item">
-                  {bill.name} - Due in {bill.daysUntilDue}{' '}
-                  {bill.daysUntilDue === 1 ? 'day' : 'days'}
+              {notifications.upcomingBills.map((bill, index) => (
+                <li key={index} className="expanded-section-item">
+                  {bill.name} - Due in {bill.daysUntilDue} day(s)
                 </li>
               ))}
             </ul>
