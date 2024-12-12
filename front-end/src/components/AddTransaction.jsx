@@ -46,22 +46,23 @@ function AddTransaction({ onAddTransaction, onClose }) {
   const handleAddTransaction = async () => {
     const userId = localStorage.getItem('id');
     const { merchant, category, amount, date, accountId } = transaction;
-  
+
     if (merchant && category && amount && date && accountId) {
       try {
-        const utcDate = new Date(date).toISOString();
-  
+        const inputDate = new Date(date);
+        inputDate.setMinutes(inputDate.getMinutes() + inputDate.getTimezoneOffset());
+        
         const response = await axios.post(`${BASE_URL}/api/transactions`, {
           merchant,
           category,
           amount: parseFloat(amount),
-          date: utcDate,
+          date: inputDate.toISOString().split('T')[0],
           accountId,
           userId,
         });
-  
+
         onAddTransaction(response.data);
-  
+
         setTransaction({
           merchant: '',
           category: '',
@@ -78,6 +79,7 @@ function AddTransaction({ onAddTransaction, onClose }) {
       alert('Please fill in all fields before submitting.');
     }
   };
+  
 
   return (
     <div className="modal">
