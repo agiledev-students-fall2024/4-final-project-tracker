@@ -91,16 +91,17 @@ function Home() {
                         </p>
 
                         <div className="progress-bar-container">
-                            <div
-                                className="progress-bar"
-                                style={{
-                                    width: `${Math.min((totalSpent / monthlyLimit) * 100, 100)}%`,
-                                }}
-                            >
-                                {Math.round((totalSpent / monthlyLimit) * 100)}% Spent
-                            </div>
+                          <div
+                            className="progress-bar"
+                            style={{
+                              width: `${Math.min((totalSpent / monthlyLimit) * 100, 100)}%`,
+                            }}
+                          ></div>
+                          <span className="progress-percentage">
+                            {Math.round((totalSpent / monthlyLimit) * 100)}% Spent
+                          </span>
                         </div>
-
+                        
                         <button
                             className="view-breakdown"
                             onClick={() => setShowBreakdown(!showBreakdown)}
