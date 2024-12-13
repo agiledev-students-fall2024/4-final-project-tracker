@@ -96,7 +96,7 @@ const Goal = ({ currentUserId }) => {
 
             // Refresh data
             await fetchGoals();
-            
+
             setShowTransactionModal(false);
             setSelectedGoalId(null);
         } catch (error) {
@@ -108,7 +108,7 @@ const Goal = ({ currentUserId }) => {
     const handleUnlinkTransaction = async (transactionId) => {
         const userId = localStorage.getItem('id');
         const token = localStorage.getItem('token');
-    
+
         try {
             const response = await fetch(
                 `http://localhost:3001/goals/${selectedGoalId}/unlink/${transactionId}`,
@@ -118,18 +118,18 @@ const Goal = ({ currentUserId }) => {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ 
+                    body: JSON.stringify({
                         userId,
                         goalId: selectedGoalId
                     }),
                 }
             );
-    
+
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || 'Failed to unlink transaction');
             }
-    
+
             // Update local state immediately
             setLinkedTransactions(prev => ({
                 ...prev,
@@ -140,7 +140,7 @@ const Goal = ({ currentUserId }) => {
 
             // Refresh goal data to get updated amounts
             await fetchGoals();
-    
+
             setShowUnlinkModal(false);
         } catch (error) {
             console.error('Error unlinking transaction:', error);
@@ -180,7 +180,7 @@ const Goal = ({ currentUserId }) => {
 
             // Refresh goals list
             await fetchGoals();
-            
+
             setShowEditModal(false);
             setCurrentGoal(null);
         } catch (error) {
@@ -233,18 +233,23 @@ const Goal = ({ currentUserId }) => {
                                 <p>Target: ${goal.targetAmount}</p>
                                 <p>Current: ${goal.currentAmount}</p>
                                 <div className="progress-bar-container">
-                                    <div
-                                        className="progress-bar"
-                                        style={{
-                                            width: `${(goal.currentAmount / goal.targetAmount) * 100}%`,
-                                        }}
-                                    >
-                                        {Math.round((goal.currentAmount / goal.targetAmount) * 100)}% Achieved
-                                    </div>
-                                </div>
+    <div
+        className="progress-bar"
+        style={{
+            width: goal.currentAmount > 0 ? `${(goal.currentAmount / goal.targetAmount) * 100}%` : '0%',
+            backgroundColor: goal.currentAmount > 0 ? '#4CAF50' : 'transparent'
+        }}
+    >
+        <span className="progress-text" style={{
+            color: goal.currentAmount > 0 ? 'white' : 'black'
+        }}>
+            {Math.round((goal.currentAmount / goal.targetAmount) * 100)}% Achieved
+        </span>
+    </div>
+</div>
                                 <div className="button-group">
-                                    <button 
-                                        className="edit-button" 
+                                    <button
+                                        className="edit-button"
                                         onClick={() => {
                                             setCurrentGoal(goal);
                                             setShowEditModal(true);
@@ -252,13 +257,13 @@ const Goal = ({ currentUserId }) => {
                                     >
                                         Edit
                                     </button>
-                                    <button 
-                                        className="delete-button" 
+                                    <button
+                                        className="delete-button"
                                         onClick={() => handleDeleteGoal(goal._id)}
                                     >
                                         Delete
                                     </button>
-                                    <button 
+                                    <button
                                         className="link-button"
                                         onClick={() => {
                                             setSelectedGoalId(goal._id);
@@ -267,7 +272,7 @@ const Goal = ({ currentUserId }) => {
                                     >
                                         Link Transaction
                                     </button>
-                                    <button 
+                                    <button
                                         className="unlink-button"
                                         onClick={() => {
                                             setSelectedGoalId(goal._id);
@@ -292,7 +297,7 @@ const Goal = ({ currentUserId }) => {
                     <div className="modal-content">
                         <div className="modal-header">
                             <h2>Edit Goal</h2>
-                            <button 
+                            <button
                                 className="modal-close-button"
                                 onClick={() => {
                                     setShowEditModal(false);
@@ -322,7 +327,7 @@ const Goal = ({ currentUserId }) => {
                     <div className="modal-content">
                         <div className="modal-header">
                             <h2>Link Transaction to Goal</h2>
-                            <button 
+                            <button
                                 className="modal-close-button"
                                 onClick={() => {
                                     setShowTransactionModal(false);
@@ -365,7 +370,7 @@ const Goal = ({ currentUserId }) => {
                     <div className="modal-content">
                         <div className="modal-header">
                             <h2>Unlink Transaction from Goal</h2>
-                            <button 
+                            <button
                                 className="modal-close-button"
                                 onClick={() => {
                                     setShowUnlinkModal(false);
@@ -390,7 +395,7 @@ const Goal = ({ currentUserId }) => {
                                     </button>
                                 </div>
                             ))}
-                            {(!linkedTransactions[selectedGoalId] || linkedTransactions[selectedGoalId].length === 0) && 
+                            {(!linkedTransactions[selectedGoalId] || linkedTransactions[selectedGoalId].length === 0) &&
                                 <p>No linked transactions for this goal.</p>
                             }
                         </div>
