@@ -45,41 +45,53 @@ function AddTransaction({ onAddTransaction, onClose }) {
 
   const handleAddTransaction = async () => {
     const userId = localStorage.getItem('id');
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+        alert('You must be logged in to perform this action.');
+        return;
+    }
+
     const { merchant, category, amount, date, accountId } = transaction;
 
     if (merchant && category && amount && date && accountId) {
-      try {
-        const inputDate = new Date(date);
-        inputDate.setMinutes(inputDate.getMinutes() + inputDate.getTimezoneOffset());
-        
-        const response = await axios.post(`${BASE_URL}/api/transactions`, {
-          merchant,
-          category,
-          amount: parseFloat(amount),
-          date: inputDate.toISOString().split('T')[0],
-          accountId,
-          userId,
-        });
+        try {
+            const inputDate = new Date(date);
+            inputDate.setMinutes(inputDate.getMinutes() + inputDate.getTimezoneOffset());
 
-        onAddTransaction(response.data);
+            const response = await axios.post(
+                `${BASE_URL}/api/transactions`,
+                {
+                    merchant,
+                    category,
+                    amount: parseFloat(amount),
+                    date: inputDate.toISOString().split('T')[0],
+                    accountId,
+                    userId,
+                },
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
 
-        setTransaction({
-          merchant: '',
-          category: '',
-          amount: '',
-          date: '',
-          accountId: accounts.length > 0 ? accounts[0]._id : '',
-        });
-        onClose();
-      } catch (error) {
-        console.error('Error adding transaction:', error);
-        alert('Failed to add transaction. Please try again.');
-      }
+            onAddTransaction(response.data);
+
+            setTransaction({
+                merchant: '',
+                category: '',
+                amount: '',
+                date: '',
+                accountId: accounts.length > 0 ? accounts[0]._id : '',
+            });
+            onClose();
+        } catch (error) {
+            console.error('Error adding transaction:', error);
+            alert('Failed to add transaction. Please try again.');
+        }
     } else {
-      alert('Please fill in all fields before submitting.');
+        alert('Please fill in all fields before submitting.');
     }
   };
-  
 
   return (
     <div className="modal">

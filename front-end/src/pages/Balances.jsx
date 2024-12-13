@@ -57,6 +57,12 @@ const Balances = () => {
     const token = localStorage.getItem('token');
     const route = isDebtModal ? `${BASE_URL}/api/debts` : `${BASE_URL}/api/accounts`;
   
+    // Validation for required fields
+    if (!newItem.type || !newItem.amount || (isDebtModal && (!newItem.paymentSchedule || !newItem.totalPayments || !newItem.dueDate))) {
+      alert("Please fill out all required fields before submitting.");
+      return; 
+    }
+  
     if (token) {
       const headers = {
         'Authorization': `Bearer ${token}`,
@@ -65,11 +71,11 @@ const Balances = () => {
   
       if (isEditing) {
         const id = isDebtModal ? debts[currentItemIndex]._id : accounts[currentItemIndex]._id;
-
+  
         if (isDebtModal) {
           newItem.totalPayments = newItem.totalPayments || debts[currentItemIndex].dueDates.length;
         }
-
+  
         axios.put(`${route}/${id}`, newItem, { headers })
           .then(response => {
             if (isDebtModal) {
@@ -85,11 +91,10 @@ const Balances = () => {
           })
           .catch(err => console.error("Error updating item:", err));
       } else {
-
         if (isDebtModal) {
-          newItem.totalPayments = newItem.totalPayments || debts[currentItemIndex].dueDates.length;
+          newItem.totalPayments = newItem.totalPayments || debts[currentItemIndex]?.dueDates?.length || 1; 
         }
-        
+  
         axios.post(route, newItem, { headers })
           .then(response => {
             if (isDebtModal) {

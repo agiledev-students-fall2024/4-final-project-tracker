@@ -33,7 +33,7 @@ function EditBudget({ onUpdateBudget, onClose, currentBudget }) {
                 limit: parseFloat(cat.limit),
             })),
         };
-
+    
         try {
             const response = await fetch('http://localhost:3001/api/budget-limits', {
                 method: 'POST',
@@ -43,15 +43,20 @@ function EditBudget({ onUpdateBudget, onClose, currentBudget }) {
                 },
                 body: JSON.stringify(payload),
             });
-
+    
             if (!response.ok) throw new Error('Failed to update budget');
 
-            onUpdateBudget(payload.monthlyLimit, payload.categories);
+            onUpdateBudget({
+                monthlyLimit: payload.monthlyLimit,
+                categories: payload.categories
+            });
+            onClose();
         } catch (error) {
             console.error('Error updating budget:', error);
         }
     };
-
+    
+    
     return (
         <div className="modal">
             <div className="modal-content">

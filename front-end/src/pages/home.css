@@ -51,17 +51,28 @@ h2 {
   height: 30px;
   margin-bottom: 15px;
   border: 1px solid #d3d3d3;
+  position: relative;
 }
 
 .progress-bar {
   height: 100%;
-  line-height: 30px;
   color: white;
   text-align: center;
   font-weight: bold;
-  min-width: 0;
   background-color: #487bf1;
+  width: 0;
+  position: relative; 
 }
+
+.progress-percentage {
+  position: absolute;
+  right: 5px; 
+  top: 50%;
+  transform: translateY(-50%);
+  color: black;
+  font-weight: bold;
+}
+
 
 .under-limit {
   background-color: #4caf50;
@@ -142,7 +153,7 @@ h2 {
   padding: 10px;
   margin-bottom: 10px;
   border-radius: 5px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  
 }
 
 /* expanded section container */

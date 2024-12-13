@@ -46,7 +46,15 @@ const userSchema = new mongoose.Schema({
         currentAmount: { type: Number, default: 0, min: 0 }, 
         frequency: {type: String, enum: ['daily', 'monthly', 'annual'], required: true,},
         targetAmount: { type: Number, required: true },
-        collaborators: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], 
+        // collaborators: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], 
+        linkedTransactions: [{
+          transactionId: {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: 'transactions' 
+          },
+          amount: Number
+      }]
+
       },
     ],
     budgetLimits: {
@@ -75,13 +83,13 @@ userSchema.pre('save', async function (next) {
 
   // Add default categories for new users
   if (this.isNew) {
-      this.categories = [
-          { name: 'Food' },
-          { name: 'Transportation' },
-          { name: 'Rent' },
-          { name: 'Utilities' },
-          { name: 'Entertainment' },
-      ];
+    this.categories = [
+      { name: 'Food' },
+      { name: 'Transportation' },
+      { name: 'Bill' },
+      { name: 'Subscription' },
+      { name: 'Entertainment' },
+    ];
   }
 
   next();
