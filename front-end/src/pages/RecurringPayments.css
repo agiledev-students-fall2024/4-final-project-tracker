@@ -1,96 +1,133 @@
-.recurring-payments-container {
-  padding: 20px;
-  font-family: Arial, sans-serif;
-}
- 
+/* Center the "Recurring Payments" title on the top */
 .recurring-header {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
   margin-bottom: 20px;
 }
- 
-.add-payment-btn {
-  font-size: 1rem;
-  color: #d3d6dc;
-  text-decoration: none;
-  padding: 5px 10px;
-  background-color: #08aa39;
-  border-radius: none;
-  transition: background-color 0.3s;
+
+.recurring-header h1 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0;
+  color: #333;
+  text-align: center;
 }
- 
+
+/* Make the "Add New Payment" button smaller and place it on the right */
+.add-payment-btn {
+  align-self: flex-end; /* Align button to the right */
+  font-size: 0.7rem;
+  color: #fff;
+  text-decoration: none;
+  padding: 4px 8px; /* Smaller button size */
+  background-color: #08aa39;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+  margin-top: 10px;
+  margin-right: 15px; /* Add space from the right edge */
+}
+
 .add-payment-btn:hover {
   background-color: #1be38c;
+  transform: scale(1.05);
 }
- 
+
+/* Payment Transaction Cards */
 .payments-list {
   list-style-type: none;
   padding: 0;
+  margin: 0;
 }
+
 .payment-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 15px;
-  margin-bottom: 10px;
-  background-color: #f9f9f9;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center; /* Center content within the bubble */
+  padding: 4px 15px; /* Reduce padding for a shorter card */
+  margin-bottom: 8px; /* Reduce margin for tighter spacing */
+  background-color: #fff;
   border: 1px solid #ddd;
-  border-radius: 5px;
-  transition: background-color 0.3s;
-  position: relative;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
 }
- 
+
+.payment-item:hover {
+  transform: scale(1.02);
+}
+
+/* Descriptors (Name, Category, Amount, Due Date) in Single Row */
 .payment-details {
   display: flex;
-  width: 100%;
+  justify-content: center;
+  align-items: center;
+  width: 100%; /* Ensure descriptors span the width */
+  gap: 6px; /* Bring descriptors closer together */
+  margin-bottom: 2px; /* Reduce space between descriptors and buttons */
 }
- 
+
 .payment-name,
 .payment-category,
 .payment-amount,
 .payment-due-date {
   flex: 1;
-  min-width: 150px; /* Adjust the width as needed */
-  padding: 0 10px;
-  text-align: left;
+  min-width: 60px; /* Reduce min-width to fit in one row */
+  font-size: 0.85rem; /* Slightly smaller font */
+  color: #555;
+  text-align: center; /* Center descriptors horizontally */
 }
- 
+
 .payment-amount {
-  text-align: right;
+  text-align: center;
+  font-weight: bold;
+  color: #333;
 }
- 
-/* Button Styling */
+
+.payment-due-date {
+  text-align: center;
+  color: #777;
+}
+
+/* Edit and Delete Buttons within Bubble */
+.payment-buttons {
+  display: flex;
+  justify-content: center; /* Center buttons around the vertical axis */
+  align-items: center;
+  width: 100%;
+}
+
 .edit-payment-btn,
 .delete-payment-btn {
-  margin: 10px 5px;
-  padding: 5px 10px;
+  margin: 0 10px; /* Add explicit margin for horizontal spacing */
+  padding: 4px 6px; /* Compact button size */
   border: none;
   border-radius: 5px;
   cursor: pointer;
+  font-size: 0.75rem; /* Smaller font size */
+  color: #fff;
+  width: 60px; /* Adjust button width */
 }
- 
+
 .edit-payment-btn {
   background-color: #ffc107;
-  color: white;
 }
- 
+
 .delete-payment-btn {
   background-color: #dc3545;
-  color: white;
 }
- 
-.payment-item {
-  position: relative; /* Ensure relative positioning for proper alignment of buttons */
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  margin-bottom: 10px;
-  background-color: #f9f9f9;
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .payment-details {
+    gap: 20px; /* Adjust spacing for smaller screens */
+  }
+
+  .edit-payment-btn,
+  .delete-payment-btn {
+    width: 60px; /* Consistent button width for mobile */
+  }
 }
- 
-.payment-item:hover .edit-payment-btn,
-.payment-item:hover .delete-payment-btn {
-  display: block; /* Show buttons only when hovering over the item */
-}
- 

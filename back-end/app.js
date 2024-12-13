@@ -480,7 +480,7 @@ app.post(
   }
 );
  
-//update a goal
+//update a goal with express validation
 app.put('/goals/:goalId', async (req, res) => {
   const { goalId } = req.params;
   const { userId, name, targetAmount, frequency, currentAmount } = req.body;
