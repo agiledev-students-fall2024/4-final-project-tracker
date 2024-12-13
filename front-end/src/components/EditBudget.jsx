@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './EditBudget.css';
 import CategoryDropdown from './categoryDropdown';
  
+// fix refresh bug
 function EditBudget({ currentBudget, onUpdateBudget, onClose }) {
   const [monthlyLimit, setMonthlyLimit] = useState('');
   const [categories, setCategories] = useState([]);
