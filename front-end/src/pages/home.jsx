@@ -22,38 +22,56 @@ function Home() {
     const userId = localStorage.getItem('id');
 
     useEffect(() => {
-        if (!userId) {
-            console.error('No logged-in user found');
-            return;
-        }
-        fetch(`http://localhost:3001/api/transactions?userId=${userId}`)
-            .then((response) => response.json())
-            .then((data) => {
-                const sortedTransactions = (data || []).sort(
-                    (a, b) => new Date(b.date) - new Date(a.date)
-                );
-                setTransactions(sortedTransactions);
-
-                const spent = sortedTransactions.reduce(
-                    (total, transaction) => total + transaction.amount,
-                    0
-                );
-                setTotalSpent(spent);
-            })
-            .catch((err) => console.error('Error fetching transactions:', err));
-
-        fetch(`http://localhost:3001/api/budget-limits?userId=${userId}`)
-            .then((response) => response.json())
-            .then((data) => {
-                setMonthlyLimit(data.monthlyLimit || 0);
-                const limits = (data.categories || []).reduce((acc, category) => {
-                    acc[category.name] = category.limit;
-                    return acc;
-                }, {});
-                setCategoryLimits(limits);
-            })
-            .catch((err) => console.error('Error fetching budget limits:', err));
-    }, [userId]);
+      if (!userId) {
+          console.error('No logged-in user found');
+          return;
+      }
+      
+      const token = localStorage.getItem('token'); // Retrieve token from localStorage
+  
+      fetch(`http://localhost:3001/api/transactions?userId=${userId}`, {
+          headers: { Authorization: `Bearer ${token}` }, // Include the token in the headers
+      })
+          .then((response) => {
+              if (!response.ok) {
+                  throw new Error(`Error ${response.status}: ${response.statusText}`);
+              }
+              return response.json();
+          })
+          .then((data) => {
+              const sortedTransactions = (data || []).sort(
+                  (a, b) => new Date(b.date) - new Date(a.date)
+              );
+              setTransactions(sortedTransactions);
+  
+              const spent = sortedTransactions.reduce(
+                  (total, transaction) => total + transaction.amount,
+                  0
+              );
+              setTotalSpent(spent);
+          })
+          .catch((err) => console.error('Error fetching transactions:', err));
+  
+      fetch(`http://localhost:3001/api/budget-limits?userId=${userId}`, {
+          headers: { Authorization: `Bearer ${token}` }, // Include the token in the headers
+      })
+          .then((response) => {
+              if (!response.ok) {
+                  throw new Error(`Error ${response.status}: ${response.statusText}`);
+              }
+              return response.json();
+          })
+          .then((data) => {
+              setMonthlyLimit(data.monthlyLimit || 0);
+              const limits = (data.categories || []).reduce((acc, category) => {
+                  acc[category.name] = category.limit;
+                  return acc;
+              }, {});
+              setCategoryLimits(limits);
+          })
+          .catch((err) => console.error('Error fetching budget limits:', err));
+  }, [userId]);
+  
 
     const handleBudgetSet = (updatedBudget) => {
       if (updatedBudget) {
@@ -101,7 +119,7 @@ function Home() {
                             {Math.round((totalSpent / monthlyLimit) * 100)}% Spent
                           </span>
                         </div>
-                        
+
                         <button
                             className="view-breakdown"
                             onClick={() => setShowBreakdown(!showBreakdown)}
