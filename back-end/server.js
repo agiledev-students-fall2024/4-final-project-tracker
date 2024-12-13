@@ -1,38 +1,37 @@
 #!/usr/bin/env node
- 
+
 import app from './app.js';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import './cron-jobs/recurringPaymentsScheduler.js';
- 
-// const port = 3001;
- 
-// const port = process.env.PORT || 3001;
- 
-// const listener = app.listen(port, () => {
-//   console.log(`Server running on port: ${port}`);
-// });
- 
+
 dotenv.config();
-const PORT = process.env.PORT || 3001; // 0 lets the OS assign a free port
-const listener = app.listen(PORT, () => {
-  console.log(`Server is running on port ${listener.address().port}`);
-});
- 
-// mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-//   .then(() => {
-//     console.log('Connected to MongoDB');
-//     app.listen(PORT, () => {
-//       console.log(`Server is running on port ${PORT}`);
-//     });
-//   })
-//   .catch((error) => console.error('Database connection error:', error));
- 
+
+const PORT = process.env.PORT || 3001;
+const HOST = '0.0.0.0'; // Listen on all interfaces
+
+let listener; // Declare listener in the outer scope
+
+// Connect to MongoDB and start the server
+mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log('Connected to MongoDB');
+    listener = app.listen(PORT, HOST, () => {
+      console.log(`Backend server running at http://${HOST}:${PORT}`);
+    });
+  })
+  .catch((error) => console.error('Database connection error:', error));
+
 // Function to stop the server
 const close = () => {
-  listener.close();
+  if (listener) {
+    listener.close(() => {
+      console.log('Server has been stopped');
+    });
+  } else {
+    console.log('Server is not running');
+  }
 };
- 
-// Export close function and listener
- 
-export { close, listener };
+
+// Export listener and close function at the top level
+export { listener, close };
