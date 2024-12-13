@@ -166,136 +166,133 @@ function RecurringPayments() {
   };
  
   return (
-    <div className="recurring-payments-container">
-      <header className="recurring-header">
-        <h1>Recurring Payments</h1>
-        <button onClick={() => setShowModal(true)} className="add-payment-btn">
-          + Add New Payment
-        </button>
-      </header>
- 
-      <ul className="payments-list">
-        {payments.length === 0 && (
-          <p className="no-payments-message">No recurring payments found.</p>
-        )}
-        {payments.map((payment, index) => (
-          <li key={payment._id || index} className="payment-item">
-            <div className="payment-details">
-              <p className="payment-name">
-                {payment.name || 'Unnamed Payment'}
-              </p>
-              <p className="payment-category">
-                {payment.category || 'Uncategorized'}
-              </p>
-              <p className="payment-amount">${payment.amount || '0.00'}</p>
-              <p className="payment-due-date">
-                {formatDueDate(payment.dueDate) || 'N/A'}
-              </p>
-            </div>
-            <button
-              className="edit-payment-btn"
-              onClick={() => handleEdit(index)}
-            >
-              Edit
-            </button>
-            <button
-              className="delete-payment-btn"
-              onClick={() => handleDelete(payment._id)}
-            >
-              Delete
-            </button>
-          </li>
-        ))}
-      </ul>
- 
-      {showModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <h2>{isEditing ? 'Edit Payment' : 'Add New Payment'}</h2>
-            <label>
-              Name:
-              <input
-                type="text"
-                name="name"
-                value={newPayment.name}
-                onChange={handleChange}
-                placeholder="e.g., Rent"
-              />
-            </label>
-            <label>
-              Category:
-              <select
-                name="category"
-                value={newPayment.category}
-                onChange={handleChange}
-              >
-                <option value="">Select a category</option>
-                {categories.map((category) => (
-                  <option key={category._id} value={category.name}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Amount ($):
-              <input
-                type="number"
-                name="amount"
-                value={newPayment.amount}
-                onChange={handleChange}
-                placeholder="e.g., 1500"
-              />
-            </label>
-            <label>
-              Day of the Month Due:
-              <input
-                type="text"
-                name="dueDate"
-                value={newPayment.dueDate}
-                onChange={handleChange}
-                placeholder="e.g., Monthly on 15th"
-              />
-            </label>
-            <label>
-              Bank Account:
-              <select
-                name="accountId"
-                value={newPayment.accountId}
-                onChange={handleChange}
-              >
-                <option value="">Select an account</option>
-                {accounts.map((account) => (
-                  <option key={account._id} value={account._id}>
-                    {account.type} - {account.number}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="modal-buttons">
-              <button onClick={handleAddOrEditPayment}>
-                {isEditing ? 'Save Changes' : 'Add'}
-              </button>
-              <button onClick={resetForm}>Cancel</button>
-            </div>
-            {errorMessage && (
-              <div className="error-message">
-                <p>
-                  {errorMessage.split('\n').map((msg, idx) => (
-                    <span key={idx}>
-                      {msg}
-                      <br />
-                    </span>
-                  ))}
-                </p>
-              </div>
-            )}
-          </div>
+<div className="recurring-payments-container">
+  <header className="recurring-header">
+    <h1>Recurring Payments</h1>
+    <button onClick={() => setShowModal(true)} className="add-payment-btn">
+      + Add New Payment
+    </button>
+  </header>
+
+  <ul className="payments-list">
+    {payments.length === 0 && (
+      <p className="no-payments-message">No recurring payments found.</p>
+    )}
+    {payments.map((payment, index) => (
+      <li key={payment._id || index} className="payment-item">
+        <div className="payment-details">
+          <p className="payment-name">{payment.name || 'Unnamed Payment'}</p>
+          <p className="payment-category">{payment.category || 'Uncategorized'}</p>
+          <p className="payment-amount">${payment.amount || '0.00'}</p>
+          <p className="payment-due-date">{formatDueDate(payment.dueDate) || 'N/A'}</p>
         </div>
-      )}
- 
-      {message && <p className="info-message">{message}</p>}
+        <div className="payment-actions">
+          <button
+            className="edit-payment-btn"
+            onClick={() => handleEdit(index)}
+          >
+            Edit
+          </button>
+          <button
+            className="delete-payment-btn"
+            onClick={() => handleDelete(payment._id)}
+          >
+            Delete
+          </button>
+        </div>
+      </li>
+    ))}
+  </ul>
+
+  {showModal && (
+    <div className="modal">
+      <div className="modal-content">
+        <h2>{isEditing ? 'Edit Payment' : 'Add New Payment'}</h2>
+        <label>
+          Name:
+          <input
+            type="text"
+            name="name"
+            value={newPayment.name}
+            onChange={handleChange}
+            placeholder="e.g., Rent"
+          />
+        </label>
+        <label>
+          Category:
+          <select
+            name="category"
+            value={newPayment.category}
+            onChange={handleChange}
+          >
+            <option value="">Select a category</option>
+            {categories.map((category) => (
+              <option key={category._id} value={category.name}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Amount ($):
+          <input
+            type="number"
+            name="amount"
+            value={newPayment.amount}
+            onChange={handleChange}
+            placeholder="e.g., 1500"
+          />
+        </label>
+        <label>
+          Day of the Month Due:
+          <input
+            type="text"
+            name="dueDate"
+            value={newPayment.dueDate}
+            onChange={handleChange}
+            placeholder="e.g., Monthly on 15th"
+          />
+        </label>
+        <label>
+          Bank Account:
+          <select
+            name="accountId"
+            value={newPayment.accountId}
+            onChange={handleChange}
+          >
+            <option value="">Select an account</option>
+            {accounts.map((account) => (
+              <option key={account._id} value={account._id}>
+                {account.type} - {account.number}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="modal-buttons">
+          <button onClick={handleAddOrEditPayment}>
+            {isEditing ? 'Save Changes' : 'Add'}
+          </button>
+          <button onClick={resetForm}>Cancel</button>
+        </div>
+        {errorMessage && (
+          <div className="error-message">
+            <p>
+              {errorMessage.split('\n').map((msg, idx) => (
+                <span key={idx}>
+                  {msg}
+                  <br />
+                </span>
+              ))}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
+  )}
+
+  {message && <p className="info-message">{message}</p>}
+</div>
+
   );
 }
  
