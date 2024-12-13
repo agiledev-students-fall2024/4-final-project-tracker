@@ -4,7 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import mongoose from 'mongoose';
-import { body, validationResult } from 'express-validator';
+import { body, query, validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
 import { authenticateToken } from './middleware/auth.js';
  

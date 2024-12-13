@@ -18,31 +18,45 @@ function Transactions() {
   const token = localStorage.getItem('token');
 
   useEffect(() => {
-    fetch(`http://localhost:3001/api/transactions?userId=${userId}`)
-      .then((response) => response.json())
-      .then((data) => {
-        const sortedData = data.sort((a, b) => new Date(b.date) - new Date(a.date));
-        setTransactions(sortedData);
-        setFilteredTransactions(sortedData);
+    if (!userId || !token) {
+        console.error('Missing userId or token');
+        return;
+    }
 
-        const uniqueCategories = ['All', ...new Set(sortedData.map((t) => t.category))];
-        setCategories(uniqueCategories);
-      })
-      .catch((err) => console.error('Error fetching transactions:', err));
+    fetch(`http://localhost:3001/api/transactions?userId=${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+    })
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then((data) => {
+            if (!Array.isArray(data)) {
+                throw new Error('Invalid response: Expected an array of transactions');
+            }
+            const sortedData = data.sort((a, b) => new Date(b.date) - new Date(a.date));
+            setTransactions(sortedData);
+            setFilteredTransactions(sortedData);
+
+            const uniqueCategories = ['All', ...new Set(sortedData.map((t) => t.category))];
+            setCategories(uniqueCategories);
+        })
+        .catch((err) => console.error('Error fetching transactions:', err));
 
     fetch(`http://localhost:3001/api/accounts?userId=${userId}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+        headers: { Authorization: `Bearer ${token}` },
     })
-      .then((response) => response.json())
-      .then((accountsData) => {
-        setAccounts(accountsData);
-      })
-      .catch((err) => console.error('Error fetching accounts:', err));
-    
-    
-  }, [userId]);
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then((accountsData) => setAccounts(accountsData))
+        .catch((err) => console.error('Error fetching accounts:', err));
+}, [userId, token]);
 
   const handleCategoryChange = (event) => {
     const category = event.target.value;
