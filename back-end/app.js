@@ -543,30 +543,121 @@ app.delete('/goals/:goalId', async (req, res) => {
 // Link a transaction to a goal
 app.post('/goals/:goalId/transactions', async (req, res) => {
   const { goalId } = req.params;
-  const { userId, amount } = req.body;
- 
-  if (!userId || !amount) {
-    return res
-      .status(400)
-      .json({ message: 'User ID and transaction amount are required' });
-  }
- 
+  const { userId, transactionId, amount } = req.body;
+
   try {
-    const user = await User.findOne({ _id: userId, 'goals._id': goalId });
-    if (!user) {
-      return res.status(404).json({ message: 'Goal not found' });
-    }
- 
-    const goal = user.goals.id(goalId);
-    goal.currentAmount += amount;
- 
-    await user.save();
-    res.status(200).json({ message: 'Transaction added to goal', goal });
+      const user = await User.findOne({ _id: userId, 'goals._id': goalId });
+      if (!user) {
+          return res.status(404).json({ message: 'Goal not found' });
+      }
+
+      const goal = user.goals.id(goalId);
+      
+      // Find the transaction details
+      const transaction = user.transactions.id(transactionId);
+      if (!transaction) {
+          return res.status(404).json({ message: 'Transaction not found' });
+      }
+
+      // Add to linkedTransactions array
+      goal.linkedTransactions.push({
+          transactionId: transactionId,
+          amount: amount
+      });
+
+      // Update current amount
+      goal.currentAmount += Number(amount);
+
+      await user.save();
+      res.json({ 
+          message: 'Transaction linked successfully', 
+          goal,
+          linkedTransaction: {
+              transactionId,
+              amount,
+              merchant: transaction.merchant,
+              date: transaction.date
+          }
+      });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+      console.error('Error linking transaction:', error);
+      res.status(500).json({ error: error.message });
   }
 });
- 
+ // Get linked transactions for a goal
+ app.get('/goals/:goalId/transactions', async (req, res) => {
+  const { goalId } = req.params;
+  const { userId } = req.query;
+
+  try {
+      const user = await User.findOne({ _id: userId, 'goals._id': goalId });
+      if (!user) {
+          return res.status(404).json({ message: 'Goal not found' });
+      }
+
+      const goal = user.goals.id(goalId);
+      
+      // Get full transaction details for each linked transaction
+      const linkedTransactionsWithDetails = goal.linkedTransactions.map(linked => {
+          const transaction = user.transactions.id(linked.transactionId);
+          return {
+              ...linked.toObject(),
+              merchant: transaction?.merchant,
+              date: transaction?.date
+          };
+      });
+
+      res.json(linkedTransactionsWithDetails);
+  } catch (error) {
+      console.error('Error fetching linked transactions:', error);
+      res.status(500).json({ error: error.message });
+  }
+});
+
+// Unlink transaction from goal
+// Unlink transaction from goal
+app.delete('/goals/:goalId/unlink/:transactionId', async (req, res) => {
+  const { goalId, transactionId } = req.params;
+  const { userId } = req.body;
+
+  try {
+      const user = await User.findById(userId);
+      if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+      }
+
+      const goal = user.goals.id(goalId);
+      if (!goal) {
+          return res.status(404).json({ message: 'Goal not found' });
+      }
+
+      // Find the linked transaction to get its amount
+      const linkedTransaction = goal.linkedTransactions.find(
+          t => t.transactionId.toString() === transactionId
+      );
+
+      if (!linkedTransaction) {
+          return res.status(404).json({ message: 'Linked transaction not found' });
+      }
+
+      // Update current amount
+      goal.currentAmount = Math.max(0, goal.currentAmount - linkedTransaction.amount);
+
+      // Remove from linkedTransactions array
+      goal.linkedTransactions = goal.linkedTransactions.filter(
+          t => t.transactionId.toString() !== transactionId
+      );
+
+      await user.save();
+      res.json({ 
+          message: 'Transaction unlinked successfully', 
+          goal 
+      });
+  } catch (error) {
+      console.error('Error unlinking transaction:', error);
+      res.status(500).json({ error: error.message });
+  }
+});
 /* ======================= Transaction Routes ======================= */
 // Route to get all transactions
 app.get('/api/transactions', async (req, res) => {
