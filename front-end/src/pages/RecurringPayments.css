@@ -45,7 +45,9 @@
 .payment-item {
   display: flex;
   flex-direction: column;
-  padding: 4px 15px; /* Add space on left and right */
+  justify-content: center;
+  align-items: center; /* Center content within the bubble */
+  padding: 4px 15px; /* Reduce padding for a shorter card */
   margin-bottom: 8px; /* Reduce margin for tighter spacing */
   background-color: #fff;
   border: 1px solid #ddd;
@@ -58,13 +60,14 @@
   transform: scale(1.02);
 }
 
-/* Descriptors (Name, Category, Amount, Due Date) */
+/* Descriptors (Name, Category, Amount, Due Date) in Single Row */
 .payment-details {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  gap: 25px; /* Increase spacing between descriptors */
-  margin-bottom: 2px; /* Halve vertical distance to buttons */
+  width: 100%; /* Ensure descriptors span the width */
+  gap: 6px; /* Bring descriptors closer together */
+  margin-bottom: 2px; /* Reduce space between descriptors and buttons */
 }
 
 .payment-name,
@@ -72,43 +75,41 @@
 .payment-amount,
 .payment-due-date {
   flex: 1;
-  min-width: 80px;
-  padding: 5px;
+  min-width: 60px; /* Reduce min-width to fit in one row */
   font-size: 0.85rem; /* Slightly smaller font */
   color: #555;
+  text-align: center; /* Center descriptors horizontally */
 }
 
 .payment-amount {
-  text-align: right;
+  text-align: center;
   font-weight: bold;
   color: #333;
-  margin-right: 20px; /* Add more spacing from the due date */
 }
 
 .payment-due-date {
-  text-align: left;
+  text-align: center;
   color: #777;
-  margin-left: 15px; /* Add more spacing from the amount */
 }
 
-/* Center the Edit and Delete Buttons */
+/* Edit and Delete Buttons within Bubble */
 .payment-buttons {
   display: flex;
-  justify-content: center; /* Center buttons horizontally */
+  justify-content: center; /* Center buttons around the vertical axis */
   align-items: center;
-  gap: 10px; /* Space between buttons */
-  margin-top: 2px; /* Narrow vertical distance to descriptors */
+  width: 100%;
 }
 
 .edit-payment-btn,
 .delete-payment-btn {
-  padding: 4px 6px; /* Smaller padding */
+  margin: 0 10px; /* Add explicit margin for horizontal spacing */
+  padding: 4px 6px; /* Compact button size */
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 0.75rem; /* Slightly smaller font size */
+  font-size: 0.75rem; /* Smaller font size */
   color: #fff;
-  width: 60px !important; /* Explicitly set button width */
+  width: 60px; /* Adjust button width */
 }
 
 .edit-payment-btn {
@@ -119,11 +120,14 @@
   background-color: #dc3545;
 }
 
-/* Remove conflicting styles in responsive design */
+/* Responsive Adjustments */
 @media (max-width: 768px) {
+  .payment-details {
+    gap: 20px; /* Adjust spacing for smaller screens */
+  }
+
   .edit-payment-btn,
   .delete-payment-btn {
-    width: 60px !important; /* Ensure consistent width on smaller screens */
+    width: 60px; /* Consistent button width for mobile */
   }
 }
-
