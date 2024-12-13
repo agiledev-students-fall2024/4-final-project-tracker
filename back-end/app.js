@@ -322,55 +322,74 @@ app.put(
   }
 );
 
-app.put('/api/debts/:debtId/dueDates/:dateIndex', authenticateToken, async (req, res) => {
-  const { debtId, dateIndex } = req.params;
-  const { accountId, isUndo } = req.body; // `isUndo` indicates if it's an undo operation
-
-  try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+app.put(
+  '/api/debts/:debtId/dueDates/:dateIndex',
+  authenticateToken,
+  [
+    body('accountId')
+      .notEmpty()
+      .withMessage('Account ID is required')
+      .isMongoId()
+      .withMessage('Account ID must be a valid MongoDB ObjectId'),
+    body('isUndo')
+      .notEmpty()
+      .withMessage('isUndo is required')
+      .isBoolean()
+      .withMessage('isUndo must be a boolean value'),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
 
-    const debt = user.debts.id(debtId);
-    if (!debt || !debt.dueDates[dateIndex]) {
-      return res.status(404).json({ error: 'Debt or due date not found' });
-    }
+    const { debtId, dateIndex } = req.params;
+    const { accountId, isUndo } = req.body; 
 
-    const account = user.accounts.id(accountId);
-    if (!account) {
-      return res.status(404).json({ error: 'Account not found' });
-    }
-
-    const paymentAmount = debt.paymentAmount;
-
-    if (isUndo) {
-      // Undo payment
-      if (!debt.dueDates[dateIndex].isPaid) {
-        return res.status(400).json({ error: 'This due date is not marked as paid.' });
+    try {
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
       }
-      account.amount += paymentAmount; 
-      debt.dueDates[dateIndex].isPaid = false; 
-    } else {
-      // Mark as paid
-      if (debt.dueDates[dateIndex].isPaid) {
-        return res.status(400).json({ error: 'This due date is already marked as paid.' });
+
+      const debt = user.debts.id(debtId);
+      if (!debt || !debt.dueDates[dateIndex]) {
+        return res.status(404).json({ error: 'Debt or due date not found' });
       }
-      if (account.amount < paymentAmount) {
-        return res.status(400).json({ error: 'Insufficient funds in the account.' });
+
+      const account = user.accounts.id(accountId);
+      if (!account) {
+        return res.status(404).json({ error: 'Account not found' });
       }
-      account.amount -= paymentAmount; 
-      debt.dueDates[dateIndex].isPaid = true; 
+
+      const paymentAmount = debt.paymentAmount;
+
+      if (isUndo) {
+        if (!debt.dueDates[dateIndex].isPaid) {
+          return res.status(400).json({ error: 'This due date is not marked as paid.' });
+        }
+        account.amount += paymentAmount;
+        debt.dueDates[dateIndex].isPaid = false;
+      } else {
+        if (debt.dueDates[dateIndex].isPaid) {
+          return res.status(400).json({ error: 'This due date is already marked as paid.' });
+        }
+        if (account.amount < paymentAmount) {
+          return res.status(400).json({ error: 'Insufficient funds in the account.' });
+        }
+        account.amount -= paymentAmount;
+        debt.dueDates[dateIndex].isPaid = true;
+      }
+
+      await user.save();
+
+      res.status(200).json({ debt, account });
+    } catch (error) {
+      console.error('Error updating due date:', error);
+      res.status(500).json({ error: error.message });
     }
-
-    await user.save();
-
-    res.status(200).json({ debt, account });
-  } catch (error) {
-    console.error('Error updating due date:', error);
-    res.status(500).json({ error: error.message });
   }
-});
+);
  
 // Route to delete a debt by ID
 app.delete('/api/debts/:debtId', authenticateToken, async (req, res) => {
