@@ -397,7 +397,7 @@ app.delete('/api/debts/:debtId', authenticateToken, async (req, res) => {
  
 /* ======================= Goal Routes ======================= */
  
-app.get('/goals', async (req, res) => {
+app.get('/goals',authenticateToken, async (req, res) => {
   const { userId } = req.query;
  
   if (!userId) {
@@ -418,7 +418,7 @@ app.get('/goals', async (req, res) => {
  
 // Create a new goal
 app.post(
-  '/goals',
+  '/goals',authenticateToken, 
   [
     body('userId').notEmpty().withMessage('User ID is required'),
     body('name').notEmpty().withMessage('Goal name is required'),
@@ -462,7 +462,7 @@ app.post(
 );
  
 //update a goal
-app.put('/goals/:goalId', async (req, res) => {
+app.put('/goals/:goalId', authenticateToken, async (req, res) => {
   const { goalId } = req.params;
   const { userId, name, targetAmount, frequency, currentAmount } = req.body;
  
@@ -489,7 +489,7 @@ app.put('/goals/:goalId', async (req, res) => {
   }
 });
  
-app.delete('/goals/:goalId', async (req, res) => {
+app.delete('/goals/:goalId', authenticateToken, async (req, res) => {
   const { goalId } = req.params;
   const userId = req.query.userId || req.headers['user-id'];
  
@@ -522,7 +522,7 @@ app.delete('/goals/:goalId', async (req, res) => {
 });
  
 // Link a transaction to a goal
-app.post('/goals/:goalId/transactions', async (req, res) => {
+app.post('/goals/:goalId/transactions', authenticateToken, async (req, res) => {
   const { goalId } = req.params;
   const { userId, transactionId, amount } = req.body;
 
@@ -566,7 +566,7 @@ app.post('/goals/:goalId/transactions', async (req, res) => {
   }
 });
  // Get linked transactions for a goal
- app.get('/goals/:goalId/transactions', async (req, res) => {
+ app.get('/goals/:goalId/transactions', authenticateToken, async (req, res) => {
   const { goalId } = req.params;
   const { userId } = req.query;
 
@@ -597,7 +597,7 @@ app.post('/goals/:goalId/transactions', async (req, res) => {
 
 // Unlink transaction from goal
 // Unlink transaction from goal
-app.delete('/goals/:goalId/unlink/:transactionId', async (req, res) => {
+app.delete('/goals/:goalId/unlink/:transactionId',authenticateToken,  async (req, res) => {
   const { goalId, transactionId } = req.params;
   const { userId } = req.body;
 
