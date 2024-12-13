@@ -55,14 +55,27 @@ const Goal = ({ currentUserId }) => {
     const fetchTransactions = async () => {
         try {
             const userId = localStorage.getItem('id');
-            const response = await fetch(`http://localhost:3001/api/transactions?userId=${userId}`);
+            const token = localStorage.getItem('token');
+    
+            if (!token) {
+                throw new Error('User not authenticated.');
+            }
+    
+            const response = await fetch(`http://localhost:3001/api/transactions?userId=${userId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+    
             if (!response.ok) throw new Error('Failed to fetch transactions');
+    
             const data = await response.json();
             setTransactions(data);
         } catch (error) {
             console.error('Error fetching transactions:', error);
         }
-    };
+    };    
 
     // Initial data fetch
     useEffect(() => {
