@@ -307,10 +307,8 @@ app.put(
         if (dueDate) debt.dueDate = dueDate;
         if (paymentSchedule) debt.paymentSchedule = paymentSchedule;
     
-        // Update totalPayments if provided
         const totalPayments = req.body.totalPayments || debt.dueDates.length;
     
-        // Recalculate due dates and payment amount
         const newDueDates = calculateDueDates(debt.dueDate, debt.paymentSchedule, totalPayments);
         debt.dueDates = newDueDates;
         debt.paymentAmount = debt.amount / totalPayments;
@@ -730,7 +728,6 @@ app.get('/api/recurringbills', authenticateToken, async (req, res) => {
   }
 });
  
-// PUT route to update recurring bill
 app.put(
   '/api/recurringbills/:billId',
   authenticateToken,
@@ -753,17 +750,15 @@ app.put(
       .withMessage('Due date must be between 1 and 31'),
   ],
   async (req, res) => {
-    const userId = req.user.id; // User ID from the token
-    const billId = req.params.billId; // Bill ID from the URL
+    const userId = req.user.id; 
+    const billId = req.params.billId;
  
-    // Validate input
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
  
     try {
-      // Find the recurring payment by ID
       const recurringBill = await RecurringPayment.findOne({
         _id: billId,
         userId: userId,
@@ -773,7 +768,6 @@ app.put(
         return res.status(404).json({ message: 'Recurring bill not found' });
       }
  
-      // Update the fields
       const updatedFields = {
         name: req.body.name || recurringBill.name,
         category: req.body.category || recurringBill.category,
@@ -781,11 +775,8 @@ app.put(
         dueDate: req.body.dueDate || recurringBill.dueDate,
       };
  
-      // Update the recurring bill
       Object.assign(recurringBill, updatedFields);
       await recurringBill.save();
- 
-      // Return the updated recurring bill
       res.status(200).json(recurringBill);
     } catch (error) {
       console.error('Error updating recurring bill:', error);
@@ -857,8 +848,6 @@ app.post(
 app.delete('/api/recurringbills/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
- 
-    // Delete the recurring payment by ID
     const result = await RecurringPayment.findByIdAndDelete(id);
  
     if (!result) {
@@ -881,13 +870,12 @@ app.get('/api/budget-limits', async (req, res) => {
   }
  
   try {
-    // Fetch the user and their budget limits
     const user = await User.findById(userId).select('budgetLimits');
     if (!user) {
       return res.status(404).json({ error: 'User not found.' });
     }
  
-    res.json(user.budgetLimits); // Send the budget limits
+    res.json(user.budgetLimits); 
   } catch (error) {
     console.error('Error fetching budget limits:', error);
     res.status(500).json({ error: 'Internal server error.' });
@@ -920,10 +908,80 @@ app.post('/api/budget-limits', authenticateToken, async (req, res) => {
  
 /* ======================= Notification Routes ======================= */
 // Route to get notifications
-app.get('/api/notifications', (req, res) => {
-  const notifications = getNotifications();
-  res.json(notifications);
+app.get('/api/notifications', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    const user = await User.findById(userId).select('budgetLimits');
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const recurringPayments = await RecurringPayment.find({ userId });
+
+    const filterDueWithinNextDays = (dueDate) => {
+      const today = new Date();
+      const currentDay = today.getDate();
+      const currentMonth = today.getMonth();
+      const currentYear = today.getFullYear();
+
+      let nextDueDate = new Date(currentYear, currentMonth, dueDate);
+      if (currentDay > dueDate) {
+        nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+      }
+
+      const diffTime = nextDueDate - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays <= 5 && diffDays >= 0; 
+    };
+
+    const subscriptions = recurringPayments
+      .filter(payment => payment.category.toLowerCase() === 'subscription' && filterDueWithinNextDays(payment.dueDate))
+      .map(payment => ({
+        name: payment.name,
+        daysUntilDue: calculateDaysUntilDue(payment.dueDate),
+      }));
+
+    const upcomingBills = recurringPayments
+      .filter(payment => payment.category.toLowerCase() !== 'subscription' && filterDueWithinNextDays(payment.dueDate))
+      .map(payment => ({
+        name: payment.name,
+        daysUntilDue: calculateDaysUntilDue(payment.dueDate),
+      }));
+
+    const notifications = {
+      budgetLimits: user.budgetLimits.categories
+        .filter(category => category.limit > 0 && category.limit < category.spent)
+        .map(category => ({
+          name: category.name,
+          spent: category.spent,
+          limit: category.limit,
+        })),
+      subscriptions,
+      upcomingBills,
+    };
+
+    res.status(200).json(notifications);
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
+
+const calculateDaysUntilDue = (dueDate) => {
+  const today = new Date();
+  const currentDay = today.getDate();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+
+  let nextDueDate = new Date(currentYear, currentMonth, dueDate);
+  if (currentDay > dueDate) {
+    nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+  }
+
+  const diffTime = nextDueDate - today;
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+};
+
  
 // POST route for logout
 app.post('/api/logout', (req, res) => {
@@ -931,8 +989,6 @@ app.post('/api/logout', (req, res) => {
   if (!token) {
     return res.status(400).json({ message: 'No token provided' });
   }
- 
-  // Add the token to the blacklist
   tokenBlacklist.push(token);
   res.status(200).json({ message: 'Successfully logged out' });
 });

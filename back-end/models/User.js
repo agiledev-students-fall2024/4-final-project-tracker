@@ -75,13 +75,13 @@ userSchema.pre('save', async function (next) {
 
   // Add default categories for new users
   if (this.isNew) {
-      this.categories = [
-          { name: 'Food' },
-          { name: 'Transportation' },
-          { name: 'Rent' },
-          { name: 'Utilities' },
-          { name: 'Entertainment' },
-      ];
+    this.categories = [
+      { name: 'Food' },
+      { name: 'Transportation' },
+      { name: 'Bill' },
+      { name: 'Subscription' },
+      { name: 'Entertainment' },
+    ];
   }
 
   next();

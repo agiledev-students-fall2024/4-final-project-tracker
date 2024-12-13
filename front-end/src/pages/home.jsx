@@ -26,8 +26,6 @@ function Home() {
             console.error('No logged-in user found');
             return;
         }
-
-        // Fetch transactions for the user
         fetch(`http://localhost:3001/api/transactions?userId=${userId}`)
             .then((response) => response.json())
             .then((data) => {
@@ -36,7 +34,6 @@ function Home() {
                 );
                 setTransactions(sortedTransactions);
 
-                // Calculate total spent
                 const spent = sortedTransactions.reduce(
                     (total, transaction) => total + transaction.amount,
                     0
@@ -45,7 +42,6 @@ function Home() {
             })
             .catch((err) => console.error('Error fetching transactions:', err));
 
-        // Fetch budget limits for the user
         fetch(`http://localhost:3001/api/budget-limits?userId=${userId}`)
             .then((response) => response.json())
             .then((data) => {
@@ -59,11 +55,17 @@ function Home() {
             .catch((err) => console.error('Error fetching budget limits:', err));
     }, [userId]);
 
-    const handleBudgetSet = (newLimit, newCategoryLimits) => {
-        setMonthlyLimit(newLimit);
+    const handleBudgetSet = (updatedBudget) => {
+      if (updatedBudget) {
+        setMonthlyLimit(updatedBudget.monthlyLimit);
+        const newCategoryLimits = updatedBudget.categories.reduce((acc, category) => {
+            acc[category.name] = category.limit;
+            return acc;
+        }, {});
         setCategoryLimits(newCategoryLimits);
-        setShowSetBudget(false);
-        setShowEditBudget(false);
+      }
+      setShowSetBudget(false);
+      setShowEditBudget(false);
     };
 
     return (
@@ -89,16 +91,17 @@ function Home() {
                         </p>
 
                         <div className="progress-bar-container">
-                            <div
-                                className="progress-bar"
-                                style={{
-                                    width: `${Math.min((totalSpent / monthlyLimit) * 100, 100)}%`,
-                                }}
-                            >
-                                {Math.round((totalSpent / monthlyLimit) * 100)}% Spent
-                            </div>
+                          <div
+                            className="progress-bar"
+                            style={{
+                              width: `${Math.min((totalSpent / monthlyLimit) * 100, 100)}%`,
+                            }}
+                          ></div>
+                          <span className="progress-percentage">
+                            {Math.round((totalSpent / monthlyLimit) * 100)}% Spent
+                          </span>
                         </div>
-
+                        
                         <button
                             className="view-breakdown"
                             onClick={() => setShowBreakdown(!showBreakdown)}
@@ -136,7 +139,10 @@ function Home() {
             </section>
 
             {/* Notifications */}
-            <Notifications />
+            <Notifications 
+                categoryLimits={categoryLimits} 
+                transactions={transactions} 
+            />
 
             {/* Transactions Section */}
             <section className="transactions">
@@ -152,26 +158,51 @@ function Home() {
                     </button>
                 </div>
                 <ul className="transaction-list">
-                    {transactions.slice(0, 5).map((transaction) => (
-                        <li key={transaction._id || transaction.id} className="transaction-item">
-                            <span>{transaction.merchant}</span>
-                            <span>{transaction.category}</span>
-                            <span>${transaction.amount.toFixed(2)}</span>
-                            <span>
-                                {new Date(transaction.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            </span>
-
-                        </li>
-                    ))}
-                </ul>
+                  {transactions.slice(0, 5).map((transaction) => (
+                      <li key={transaction._id || transaction.id} className="transaction-item">
+                          <span>{transaction.merchant || 'Unknown Merchant'}</span>
+                          <span>{transaction.category || 'Uncategorized'}</span>
+                          <span>
+                              $
+                              {transaction.amount !== undefined && transaction.amount !== null
+                                  ? transaction.amount.toFixed(2)
+                                  : '0.00'}
+                          </span>
+                          <span>
+                              {transaction.date
+                                  ? new Date(transaction.date).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                    })
+                                  : 'No Date'}
+                          </span>
+                      </li>
+                  ))}
+              </ul>
             </section>
 
             {showAddTransaction && (
-                <AddTransaction
-                    onAddTransaction={(transaction) => setTransactions([...transactions, transaction])}
-                    onClose={() => setShowAddTransaction(false)}
-                />
-            )}
+              <AddTransaction
+                  onAddTransaction={(transaction) => {
+                      fetch(`http://localhost:3001/api/transactions?userId=${userId}`)
+                          .then((response) => response.json())
+                          .then((data) => {
+                              const sortedTransactions = (data || []).sort(
+                                  (a, b) => new Date(b.date) - new Date(a.date)
+                              );
+                              setTransactions(sortedTransactions);
+                              const spent = sortedTransactions.reduce(
+                                  (total, transaction) => total + transaction.amount,
+                                  0
+                              );
+                              setTotalSpent(spent);
+                          })
+                          .catch((err) => console.error('Error fetching transactions:', err));
+                  }}
+                  onClose={() => setShowAddTransaction(false)}
+              />
+          )}
+
 
             {showSetBudget && (
                 <SetBudget
