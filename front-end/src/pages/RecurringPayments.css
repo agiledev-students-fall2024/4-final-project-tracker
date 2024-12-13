@@ -12,23 +12,22 @@
  
 .add-payment-btn {
   font-size: 1rem;
-  color: #487bf1;
+  color: #d3d6dc;
   text-decoration: none;
   padding: 5px 10px;
-  background-color: #e0e7ff;
-  border-radius: 5px;
+  background-color: #08aa39;
+  border-radius: none;
   transition: background-color 0.3s;
 }
  
 .add-payment-btn:hover {
-  background-color: #bcd4ff;
+  background-color: #1be38c;
 }
  
 .payments-list {
   list-style-type: none;
   padding: 0;
 }
- 
 .payment-item {
   display: flex;
   align-items: center;
@@ -42,41 +41,43 @@
   position: relative;
 }
  
-.payment-item:hover {
-  background-color: #e8f1ff;
-}
- 
 .payment-details {
   display: flex;
-  gap: 20px;
+  width: 100%;
 }
  
-.payment-name {
-  font-weight: bold;
+.payment-name,
+.payment-category,
+.payment-amount,
+.payment-due-date {
+  flex: 1;
+  min-width: 150px; /* Adjust the width as needed */
+  padding: 0 10px;
+  text-align: left;
+}
+ 
+.payment-amount {
+  text-align: right;
+}
+ 
+/* Button Styling */
+.edit-payment-btn,
+.delete-payment-btn {
+  margin: 10px 5px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
 }
  
 .edit-payment-btn {
-  display: block;
-  position: absolute;
-  top: 10px;
-  right: 60px; /* Adjust this value to space it from the Delete button */
-  font-size: 0.9rem;
-  color: #487bf1;
-  background: none;
-  border: none;
-  cursor: pointer;
+  background-color: #ffc107;
+  color: white;
 }
  
 .delete-payment-btn {
-  display: block;
-  position: absolute;
-  top: 10px;
-  right: 10px; /* Align to the right of the container */
-  font-size: 0.9rem;
-  color: #f14848;
-  background: none;
-  border: none;
-  cursor: pointer;
+  background-color: #dc3545;
+  color: white;
 }
  
 .payment-item {
@@ -92,3 +93,4 @@
 .payment-item:hover .delete-payment-btn {
   display: block; /* Show buttons only when hovering over the item */
 }
+ 

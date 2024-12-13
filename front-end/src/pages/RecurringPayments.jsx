@@ -162,7 +162,7 @@ function RecurringPayments() {
   const formatDueDate = (dueDate) => {
     if (!dueDate) return 'N/A';
  
-    return `Monthly on ${dueDate}`;
+    return `Day of the Month  ${dueDate}`;
   };
  
   return (
