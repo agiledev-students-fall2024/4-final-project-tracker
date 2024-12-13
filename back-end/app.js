@@ -4,7 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import mongoose from 'mongoose';
-import { body, validationResult } from 'express-validator';
+import { body, query, validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
 import { authenticateToken } from './middleware/auth.js';
  
@@ -552,20 +552,16 @@ app.post('/goals/:goalId/transactions', async (req, res) => {
       }
 
       const goal = user.goals.id(goalId);
-      
-      // Find the transaction details
       const transaction = user.transactions.id(transactionId);
       if (!transaction) {
           return res.status(404).json({ message: 'Transaction not found' });
       }
 
-      // Add to linkedTransactions array
       goal.linkedTransactions.push({
           transactionId: transactionId,
           amount: amount
       });
 
-      // Update current amount
       goal.currentAmount += Number(amount);
 
       await user.save();
@@ -597,7 +593,6 @@ app.post('/goals/:goalId/transactions', async (req, res) => {
 
       const goal = user.goals.id(goalId);
       
-      // Get full transaction details for each linked transaction
       const linkedTransactionsWithDetails = goal.linkedTransactions.map(linked => {
           const transaction = user.transactions.id(linked.transactionId);
           return {
@@ -615,7 +610,6 @@ app.post('/goals/:goalId/transactions', async (req, res) => {
 });
 
 // Unlink transaction from goal
-// Unlink transaction from goal
 app.delete('/goals/:goalId/unlink/:transactionId', async (req, res) => {
   const { goalId, transactionId } = req.params;
   const { userId } = req.body;
@@ -631,7 +625,6 @@ app.delete('/goals/:goalId/unlink/:transactionId', async (req, res) => {
           return res.status(404).json({ message: 'Goal not found' });
       }
 
-      // Find the linked transaction to get its amount
       const linkedTransaction = goal.linkedTransactions.find(
           t => t.transactionId.toString() === transactionId
       );
@@ -640,10 +633,8 @@ app.delete('/goals/:goalId/unlink/:transactionId', async (req, res) => {
           return res.status(404).json({ message: 'Linked transaction not found' });
       }
 
-      // Update current amount
       goal.currentAmount = Math.max(0, goal.currentAmount - linkedTransaction.amount);
 
-      // Remove from linkedTransactions array
       goal.linkedTransactions = goal.linkedTransactions.filter(
           t => t.transactionId.toString() !== transactionId
       );
@@ -660,35 +651,43 @@ app.delete('/goals/:goalId/unlink/:transactionId', async (req, res) => {
 });
 /* ======================= Transaction Routes ======================= */
 // Route to get all transactions
-app.get('/api/transactions', async (req, res) => {
-  const { userId } = req.query;
- 
-  if (!userId) {
-    return res.status(400).json({ error: 'User ID is required' });
+app.get('/api/transactions', authenticateToken, [
+  query('userId').isMongoId().withMessage('Invalid user ID'),
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
   }
- 
+
+  const { userId } = req.query;
+
   try {
     const user = await User.findById(userId).select('transactions');
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
- 
-    res.json(user.transactions || []); 
+
+    res.json(user.transactions || []);
   } catch (error) {
     console.error('Error fetching transactions:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
- 
-// Route to add a new transaction
-app.post('/api/transactions', async (req, res) => {
-  const { merchant, category, amount, date, userId, accountId } = req.body;
 
-  if (!userId || !merchant || !category || amount == null || !date || !accountId) {
-    return res.status(400).json({
-      error: 'User ID, merchant, category, amount, date, and account ID are required.',
-    });
+// Route to add a new transaction
+app.post('/api/transactions', authenticateToken, [
+  body('merchant').notEmpty().withMessage('Merchant is required'),
+  body('category').notEmpty().withMessage('Category is required'),
+  body('amount').isFloat({ min: 0 }).withMessage('Amount must be a positive number'),
+  body('date').isISO8601().toDate().withMessage('Invalid date format'),
+  body('accountId').isMongoId().withMessage('Invalid account ID'),
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
   }
+
+  const { merchant, category, amount, date, userId, accountId } = req.body;
 
   try {
     const user = await User.findById(userId);
@@ -702,14 +701,12 @@ app.post('/api/transactions', async (req, res) => {
     }
 
     account.amount -= amount;
-    const transactionDate = new Date(date);
-    transactionDate.setUTCHours(12, 0, 0, 0);
 
     const newTransaction = {
       merchant,
       category,
       amount,
-      date: transactionDate,
+      date: new Date(date),
       accountId,
       _id: new mongoose.Types.ObjectId(),
     };
@@ -717,15 +714,13 @@ app.post('/api/transactions', async (req, res) => {
     user.transactions.push(newTransaction);
     await user.save();
 
-    res.status(201).json({
-      transaction: newTransaction,
-      updatedAccount: account
-    });
+    res.status(201).json({ transaction: newTransaction, updatedAccount: account });
   } catch (error) {
     console.error('Error adding transaction:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 app.put('/api/transactions/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
@@ -972,49 +967,57 @@ app.delete('/api/recurringbills/:id', authenticateToken, async (req, res) => {
 });
  
 /* ======================= Budget Limits Routes ======================= */
-app.get('/api/budget-limits', async (req, res) => {
-  const { userId } = req.query;
- 
-  if (!userId) {
-    return res.status(400).json({ error: 'User ID is required.' });
+app.get('/api/budget-limits', authenticateToken, [
+  query('userId').isMongoId().withMessage('Invalid user ID'),
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
   }
- 
+
+  const { userId } = req.query;
+
   try {
     const user = await User.findById(userId).select('budgetLimits');
     if (!user) {
-      return res.status(404).json({ error: 'User not found.' });
+      return res.status(404).json({ error: 'User not found' });
     }
- 
-    res.json(user.budgetLimits); 
+
+    res.json(user.budgetLimits);
   } catch (error) {
     console.error('Error fetching budget limits:', error);
-    res.status(500).json({ error: 'Internal server error.' });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.post('/api/budget-limits', authenticateToken, async (req, res) => {
+app.post('/api/budget-limits', authenticateToken, [
+  body('userId').isMongoId().withMessage('Invalid user ID'),
+  body('monthlyLimit').isFloat({ min: 0 }).withMessage('Monthly limit must be a positive number'),
+  body('categories').isArray().withMessage('Categories must be an array'),
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const { userId, monthlyLimit, categories } = req.body;
 
-  if (!userId || monthlyLimit === undefined || !Array.isArray(categories)) {
-      return res.status(400).json({ error: 'Invalid request data.' });
-  }
-
   try {
-      const user = await User.findById(userId);
-      if (!user) {
-          return res.status(404).json({ error: 'User not found.' });
-      }
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
-      user.budgetLimits.monthlyLimit = monthlyLimit;
-      user.budgetLimits.categories = categories;
+    user.budgetLimits = { monthlyLimit, categories };
+    await user.save();
 
-      await user.save();
-      res.status(200).json({ message: 'Budget limits updated successfully.' });
+    res.status(200).json({ message: 'Budget limits updated successfully.' });
   } catch (error) {
-      console.error('Error updating budget limits:', error);
-      res.status(500).json({ error: 'Internal server error.' });
+    console.error('Error updating budget limits:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
+
  
 /* ======================= Notification Routes ======================= */
 // Route to get notifications
@@ -1106,8 +1109,7 @@ app.post('/api/logout', (req, res) => {
 /* ======================= Categories Routes ======================= */
 app.get('/api/categories', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.id; 
-    console.log('Fetching categories for user ID:', userId);
+    const userId = req.user.id;
 
     const user = await User.findById(userId).select('categories');
     if (!user) {
@@ -1121,12 +1123,15 @@ app.get('/api/categories', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/categories', authenticateToken, async (req, res) => {
-  const { name } = req.body;
-
-  if (!name) {
-    return res.status(400).json({ error: 'Category name is required.' });
+app.post('/api/categories', authenticateToken, [
+  body('name').notEmpty().withMessage('Category name is required'),
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
   }
+
+  const { name } = req.body;
 
   try {
     const userId = req.user.id;
@@ -1147,6 +1152,7 @@ app.post('/api/categories', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Internal server error.' });
   }
 });
+
 
 /* ======================= Serve Frontend (React App) ======================= */
 if (process.env.NODE_ENV === 'production') {
