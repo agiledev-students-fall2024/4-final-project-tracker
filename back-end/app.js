@@ -552,20 +552,16 @@ app.post('/goals/:goalId/transactions', async (req, res) => {
       }
 
       const goal = user.goals.id(goalId);
-      
-      // Find the transaction details
       const transaction = user.transactions.id(transactionId);
       if (!transaction) {
           return res.status(404).json({ message: 'Transaction not found' });
       }
 
-      // Add to linkedTransactions array
       goal.linkedTransactions.push({
           transactionId: transactionId,
           amount: amount
       });
 
-      // Update current amount
       goal.currentAmount += Number(amount);
 
       await user.save();
@@ -597,7 +593,6 @@ app.post('/goals/:goalId/transactions', async (req, res) => {
 
       const goal = user.goals.id(goalId);
       
-      // Get full transaction details for each linked transaction
       const linkedTransactionsWithDetails = goal.linkedTransactions.map(linked => {
           const transaction = user.transactions.id(linked.transactionId);
           return {
@@ -615,7 +610,6 @@ app.post('/goals/:goalId/transactions', async (req, res) => {
 });
 
 // Unlink transaction from goal
-// Unlink transaction from goal
 app.delete('/goals/:goalId/unlink/:transactionId', async (req, res) => {
   const { goalId, transactionId } = req.params;
   const { userId } = req.body;
@@ -631,7 +625,6 @@ app.delete('/goals/:goalId/unlink/:transactionId', async (req, res) => {
           return res.status(404).json({ message: 'Goal not found' });
       }
 
-      // Find the linked transaction to get its amount
       const linkedTransaction = goal.linkedTransactions.find(
           t => t.transactionId.toString() === transactionId
       );
@@ -640,10 +633,8 @@ app.delete('/goals/:goalId/unlink/:transactionId', async (req, res) => {
           return res.status(404).json({ message: 'Linked transaction not found' });
       }
 
-      // Update current amount
       goal.currentAmount = Math.max(0, goal.currentAmount - linkedTransaction.amount);
 
-      // Remove from linkedTransactions array
       goal.linkedTransactions = goal.linkedTransactions.filter(
           t => t.transactionId.toString() !== transactionId
       );
